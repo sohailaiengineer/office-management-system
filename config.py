@@ -4,12 +4,20 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'oms-super-secret-key-enterprise-2026')
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
+def _get_database_uri():
+    uri = os.environ.get(
         'DATABASE_URL',
         'mysql+pymysql://root:@localhost:3306/oms_db?charset=utf8mb4'
     )
+    # Render gives the old "postgres://", SQLAlchemy needs "postgresql://"
+    if uri.startswith('postgres://'):
+        uri = uri.replace('postgres://', 'postgresql://', 1)
+    return uri
+
+
+class Config:
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'oms-super-secret-key-enterprise-2026')
+    SQLALCHEMY_DATABASE_URI = _get_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
     
