@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% block title %}Asset Management{% endblock %}
+{% block page_title %}Hardware & Office Asset Inventory{% endblock %}
+
+{% block content %}
+<div class="card-enterprise mb-4">
+    <div class="card-header-enterprise flex-wrap gap-3">
+        <div>
+            <h6 class="card-title-enterprise"><i class="bi bi-laptop me-2 text-primary"></i>Asset Registry & Equipment</h6>
+            <small class="text-muted">Hardware, serial numbers, warranties, and employee custody assignments</small>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('assets.request_asset') }}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-file-earmark-plus me-1"></i> Request Equipment
+            </a>
+            {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) %}
+            <a href="{{ url_for('assets.create') }}" class="btn btn-enterprise-primary btn-sm">
+                <i class="bi bi-plus-circle me-1"></i> Register New Asset
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="p-3 bg-light border-bottom">
+        <form method="GET" action="{{ url_for('assets.index') }}" class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <select name="category_id" class="form-select form-select-sm">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if selected_category == cat.id|string %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All Statuses</option>
+                    <option value="Available" {% if selected_status == 'Available' %}selected{% endif %}>Available</option>
+                    <option value="Assigned" {% if selected_status == 'Assigned' %}selected{% endif %}>Assigned</option>
+                    <option value="Under-Maintenance" {% if selected_status == 'Under-Maintenance' %}selected{% endif %}>Under-Maintenance</option>
+                    <option value="Disposed" {% if selected_status == 'Disposed' %}selected{% endif %}>Disposed</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary flex-grow-1"><i class="bi bi-funnel"></i> Filter</button>
+                <a href="{{ url_for('assets.index') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Assets Table -->
+    <div class="table-responsive">
+        <table class="table table-enterprise">
+            <thead>
+                <tr>
+                    <th>Tag #</th>
+                    <th>Asset Name</th>
+                    <th>Category</th>
+                    <th>Serial No</th>
+                    <th>Purchase Cost</th>
+                    <th>Condition</th>
+                    <th>Current Custody / Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in assets %}
+                <tr>
+                    <td><span class="badge bg-light text-dark border fw-bold">{{ a.asset_tag }}</span></td>
+                    <td class="fw-semibold">{{ a.name }}</td>
+                    <td>{{ a.category.name if a.category else 'General' }}</td>
+                    <td><code>{{ a.serial_number or 'N/A' }}</code></td>
+                    <td>${{ "{:,.2f}".format(a.purchase_cost) }}</td>
+                    <td><span class="badge badge-soft-info">{{ a.condition }}</span></td>
+                    <td>
+                        {% if a.asset_status == 'Available' %}
+                            <span class="badge badge-soft-success"><i class="bi bi-check-circle me-1"></i>Available</span>
+                        {% elif a.asset_status == 'Assigned' %}
+                            <span class="badge badge-soft-primary"><i class="bi bi-person me-1"></i>Assigned</span>
+                        {% elif a.asset_status == 'Under-Maintenance' %}
+                            <span class="badge badge-soft-warning"><i class="bi bi-tools me-1"></i>Maintenance</span>
+                        {% else %}
+                            <span class="badge badge-soft-secondary">{{ a.asset_status }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) %}
+                            {% if a.asset_status == 'Available' %}
+                            <a href="{{ url_for('assets.assign', asset_id=a.id) }}" class="btn btn-sm btn-outline-primary" title="Assign to Staff">
+                                <i class="bi bi-person-plus me-1"></i> Assign
+                            </a>
+                            {% elif a.asset_status == 'Assigned' %}
+                            <form method="POST" action="{{ url_for('assets.return_asset', asset_id=a.id) }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Check In Asset">
+                                    <i class="bi bi-box-arrow-in-left me-1"></i> Return
+                                </button>
+                            </form>
+                            {% endif %}
+                            <a href="{{ url_for('assets.edit', asset_id=a.id) }}" class="btn btn-sm btn-outline-secondary ms-1" title="Edit Asset">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('assets.delete', asset_id=a.id) }}" class="d-inline confirm-delete-form" data-confirm-message="Soft delete asset {{ a.name }}?">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger ms-1" title="Move to Trash">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-5">No assets registered.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block title %}Recycle Bin (Trash){% endblock %}
+{% block page_title %}Recycle Bin & Data Restoration Hub{% endblock %}
+
+{% block content %}
+<!-- Top Header Banner -->
+<div class="card-enterprise mb-4">
+    <div class="p-4 bg-light border-bottom d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <h5 class="fw-bold mb-1"><i class="bi bi-trash-fill me-2 text-danger"></i>Recycle Bin (Soft Deleted Records)</h5>
+            <p class="text-muted small mb-0">Records are never physically erased on normal delete. Authorized administrators can inspect and restore data here.</p>
+        </div>
+        <div>
+            <span class="badge bg-danger py-2 px-3 fs-6">
+                <i class="bi bi-archive-fill me-1"></i> {{ total_trash_items }} Items in Trash
+            </span>
+        </div>
+    </div>
+
+    <!-- Category Tabs with Badge Counts -->
+    <div class="p-3 border-bottom">
+        <ul class="nav nav-pills flex-wrap gap-2" role="tablist">
+            <li class="nav-item">
+                <a href="{{ url_for('recycle_bin.index', tab='employees') }}" class="nav-link btn-sm {% if active_tab == 'employees' %}active{% endif %}">
+                    Employees <span class="badge {% if active_tab == 'employees' %}bg-white text-primary{% else %}bg-secondary{% endif %} ms-1">{{ counts['employees'] }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('recycle_bin.index', tab='departments') }}" class="nav-link btn-sm {% if active_tab == 'departments' %}active{% endif %}">
+                    Departments <span class="badge {% if active_tab == 'departments' %}bg-white text-primary{% else %}bg-secondary{% endif %} ms-1">{{ counts['departments'] }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('recycle_bin.index', tab='projects') }}" class="nav-link btn-sm {% if active_tab == 'projects' %}active{% endif %}">
+                    Projects <span class="badge {% if active_tab == 'projects' %}bg-white text-primary{% else %}bg-secondary{% endif %} ms-1">{{ counts['projects'] }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('recycle_bin.index', tab='tasks') }}" class="nav-link btn-sm {% if active_tab == 'tasks' %}active{% endif %}">
+                    Tasks <span class="badge {% if active_tab == 'tasks' %}bg-white text-primary{% else %}bg-secondary{% endif %} ms-1">{{ counts['tasks'] }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('recycle_bin.index', tab='assets') }}" class="nav-link btn-sm {% if active_tab == 'assets' %}active{% endif %}">
+                    Assets <span class="badge {% if active_tab == 'assets' %}bg-white text-primary{% else %}bg-secondary{% endif %} ms-1">{{ counts['assets'] }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('recycle_bin.index', tab='documents') }}" class="nav-link btn-sm {% if active_tab == 'documents' %}active{% endif %}">
+                    Documents <span class="badge {% if active_tab == 'documents' %}bg-white text-primary{% else %}bg-secondary{% endif %} ms-1">{{ counts['documents'] }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('recycle_bin.index', tab='clients') }}" class="nav-link btn-sm {% if active_tab == 'clients' %}active{% endif %}">
+                    Clients <span class="badge {% if active_tab == 'clients' %}bg-white text-primary{% else %}bg-secondary{% endif %} ms-1">{{ counts['clients'] }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('recycle_bin.index', tab='expenses') }}" class="nav-link btn-sm {% if active_tab == 'expenses' %}active{% endif %}">
+                    Expenses <span class="badge {% if active_tab == 'expenses' %}bg-white text-primary{% else %}bg-secondary{% endif %} ms-1">{{ counts['expenses'] }}</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Deleted Records Table -->
+    <div class="table-responsive">
+        <table class="table table-enterprise">
+            <thead>
+                <tr>
+                    <th>Record ID</th>
+                    <th>Identifier / Title</th>
+                    <th>Deleted At</th>
+                    <th>Deleted By Actor</th>
+                    <th class="text-end">Recovery Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in records %}
+                <tr>
+                    <td><code>#{{ r.id }}</code></td>
+                    <td class="fw-semibold">
+                        {% if active_tab == 'employees' %}
+                            {{ r.full_name }} ({{ r.emp_code }})
+                        {% elif active_tab == 'departments' %}
+                            {{ r.name }} ({{ r.code }})
+                        {% elif active_tab == 'projects' or active_tab == 'tasks' or active_tab == 'documents' or active_tab == 'assets' %}
+                            {{ r.name if hasattr(r, 'name') else r.title }}
+                        {% elif active_tab == 'clients' %}
+                            {{ r.company_name }}
+                        {% elif active_tab == 'expenses' %}
+                            {{ r.title }} (${{ r.amount }})
+                        {% else %}
+                            Record #{{ r.id }}
+                        {% endif %}
+                    </td>
+                    <td>{{ r.deleted_at.strftime('%B %d, %Y at %I:%M %p') if r.deleted_at else 'N/A' }}</td>
+                    <td>User #{{ r.deleted_by or 'System' }}</td>
+                    <td class="text-end">
+                        <div class="btn-group btn-group-sm">
+                            <!-- Restore Form -->
+                            <form method="POST" action="{{ url_for('recycle_bin.restore', module_name=active_tab, record_id=r.id) }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-outline-success" title="Restore this record">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Restore
+                                </button>
+                            </form>
+
+                            <!-- Permanent Purge Form (Super Admin only) -->
+                            {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) %}
+                            <form method="POST" action="{{ url_for('recycle_bin.purge', module_name=active_tab, record_id=r.id) }}" class="d-inline ms-1 confirm-delete-form" data-confirm-message="PERMANENTLY PURGE this record? This CANNOT be undone!">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-outline-danger" title="Permanently delete from database">
+                                    <i class="bi bi-x-octagon"></i> Purge
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-5">
+                        <i class="bi bi-check-circle fs-1 text-success d-block mb-2"></i>
+                        No soft-deleted records currently stored in the {{ active_tab.title() }} trash.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

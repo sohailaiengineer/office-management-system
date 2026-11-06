@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+{% block title %}Department Manager Dashboard{% endblock %}
+{% block page_title %}{{ managed_dept.name if managed_dept else 'Department' }} Operations Console{% endblock %}
+
+{% block content %}
+<!-- Department Manager Hero Banner -->
+<div class="card-enterprise p-4 mb-4 bg-gradient" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; border: none;">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-light text-primary text-uppercase px-2 py-1"><i class="bi bi-building me-1"></i>Department Command</span>
+                <span class="text-white-50 small">&bull; {{ managed_dept.name if managed_dept else 'Department' }} ({{ managed_dept.code if managed_dept else 'DEPT' }})</span>
+            </div>
+            <h4 class="fw-bold mb-1">Welcome, {{ current_user.full_name }}</h4>
+            <p class="text-white-50 mb-0 small">Operational management for {{ managed_dept.name if managed_dept else 'your department' }}: team attendance, project deliverables, and task workflows.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('tasks.create') }}" class="btn btn-sm btn-light text-primary fw-semibold">
+                <i class="bi bi-plus-circle-fill me-1"></i> Assign Task
+            </a>
+            <a href="{{ url_for('projects.create') }}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-kanban me-1"></i> Department Project
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Department KPI Metrics Row -->
+<div class="row g-3 mb-4">
+    <!-- 1. Total Team Members -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-primary-subtle text-primary">
+                <i class="bi bi-people-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Department Staff</div>
+                <div class="kpi-value">{{ dept_total_employees }}</div>
+                <small class="text-success">{{ dept_active_employees }} Active Members</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Today's Department Attendance -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-success-subtle text-success">
+                <i class="bi bi-clock-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Team Attendance</div>
+                <div class="kpi-value">{{ dept_attendance }} / {{ dept_active_employees }}</div>
+                <small class="text-muted">{{ dept_late }} Late &bull; {{ dept_absent }} Absent</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Department Projects -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-info-subtle text-info">
+                <i class="bi bi-kanban-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Department Projects</div>
+                <div class="kpi-value">{{ dept_projects | length }}</div>
+                <small class="text-info"><i class="bi bi-folder-check me-1"></i>Active Initiatives</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Pending & In-Progress Tasks -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-warning-subtle text-warning">
+                <i class="bi bi-check2-square"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Active Tasks</div>
+                <div class="kpi-value">{{ (dept_pending_tasks | length) + (dept_in_progress_tasks | length) }}</div>
+                <small class="text-success">{{ dept_completed_tasks | length }} Completed</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Middle Section: Department Projects & Team Staff Directory -->
+<div class="row g-4 mb-4">
+    <!-- Department Projects -->
+    <div class="col-lg-6">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-kanban me-2 text-primary"></i>Department Projects</h6>
+                <a href="{{ url_for('projects.index') }}" class="btn btn-sm btn-link p-0 text-decoration-none">View All</a>
+            </div>
+            <div class="p-3">
+                {% if dept_projects %}
+                    <div class="list-group list-group-flush">
+                        {% for prj in dept_projects %}
+                        <div class="list-group-item px-0 py-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <h6 class="mb-0 fw-semibold">
+                                    <a href="{{ url_for('projects.view', project_id=prj.id) }}" class="text-dark text-decoration-none hover-primary">{{ prj.name }}</a>
+                                </h6>
+                                <span class="badge {% if prj.project_status == 'Completed' %}bg-success{% elif prj.project_status == 'In-Progress' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                    {{ prj.project_status }}
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center small text-muted mb-2">
+                                <span>Code: <span class="fw-semibold text-dark">{{ prj.code }}</span></span>
+                                <span>Deadline: <span class="fw-semibold text-dark">{{ prj.deadline.strftime('%b %d, %Y') }}</span></span>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-primary" role="progressbar" style="width: {{ prj.progress }}%;"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-folder2-open fs-2 d-block mb-2"></i>
+                        No projects currently assigned to this department.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Members Table -->
+    <div class="col-lg-6">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-people-fill me-2 text-success"></i>Department Team Members</h6>
+                <a href="{{ url_for('employees.index') }}" class="btn btn-sm btn-link p-0 text-decoration-none">Team Directory</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-enterprise align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Staff Member</th>
+                            <th>Designation</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if dept_employees %}
+                            {% for e in dept_employees %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ e.full_name }}</div>
+                                    <small class="text-muted">{{ e.emp_code }}</small>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ e.designation.title if e.designation else 'General' }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge {% if e.status == 'Active' %}badge-soft-success{% else %}badge-soft-secondary{% endif %}">
+                                        {{ e.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center py-4 text-muted">No employees assigned to this department.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Section: Department Tasks & Pending Leaves -->
+<div class="row g-4">
+    <!-- Active Department Tasks -->
+    <div class="col-lg-7">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-list-task me-2 text-primary"></i>Department Task Queue</h6>
+                <a href="{{ url_for('tasks.index') }}" class="btn btn-sm btn-outline-primary py-0">Task Board</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-enterprise align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Task</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Due Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if dept_tasks %}
+                            {% for task in dept_tasks[:6] %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold text-truncate" style="max-width: 240px;">
+                                        <a href="{{ url_for('tasks.view', task_id=task.id) }}" class="text-dark text-decoration-none hover-primary">{{ task.title }}</a>
+                                    </div>
+                                    <small class="text-muted">{{ task.project.name if task.project else 'General' }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge {% if task.priority == 'Urgent' %}bg-danger{% elif task.priority == 'High' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %}">
+                                        {{ task.priority }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge {% if task.task_status == 'Completed' %}bg-success{% elif task.task_status == 'In-Progress' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                        {{ task.task_status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ task.due_date.strftime('%b %d') }}</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">No active tasks in department.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Leave Requests -->
+    <div class="col-lg-5">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-calendar-check me-2 text-warning"></i>Team Leave Requests</h6>
+                <a href="{{ url_for('leaves.index') }}" class="btn btn-sm btn-link p-0 text-decoration-none">Review</a>
+            </div>
+            <div class="p-3">
+                {% if dept_pending_leaves %}
+                    <div class="list-group list-group-flush small">
+                        {% for lr in dept_pending_leaves %}
+                        <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-semibold">{{ lr.employee.full_name }}</div>
+                                <small class="text-muted">{{ lr.leave_type.name }} &bull; {{ lr.total_days }} day(s)</small>
+                            </div>
+                            <a href="{{ url_for('leaves.index') }}" class="btn btn-xs btn-outline-primary">Review</a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-check2-circle text-success fs-3 d-block mb-1"></i>
+                        No pending leave requests in your department.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

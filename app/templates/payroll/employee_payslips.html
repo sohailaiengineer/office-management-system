@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}My Salary Slips{% endblock %}
+{% block page_title %}Personal Compensation & Payslips{% endblock %}
+
+{% block content %}
+<div class="card-enterprise">
+    <div class="card-header-enterprise">
+        <div>
+            <h6 class="card-title-enterprise"><i class="bi bi-wallet2 me-2 text-primary"></i>My Payslip History</h6>
+            <small class="text-muted">Statements of monthly earnings, allowances, and statutory deductions</small>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-enterprise">
+            <thead>
+                <tr>
+                    <th>Payroll Month</th>
+                    <th>Basic Salary</th>
+                    <th>Allowances</th>
+                    <th>Bonuses</th>
+                    <th>Deductions</th>
+                    <th>Net Disbursed</th>
+                    <th>Status</th>
+                    <th class="text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for slip in payslips %}
+                <tr>
+                    <td class="fw-semibold">{{ slip.payroll.title }}</td>
+                    <td>${{ "{:,.2f}".format(slip.basic) }}</td>
+                    <td>${{ "{:,.2f}".format(slip.allowances) }}</td>
+                    <td class="text-success">+${{ "{:,.2f}".format(slip.bonuses_total) }}</td>
+                    <td class="text-danger">-${{ "{:,.2f}".format(slip.deductions_total) }}</td>
+                    <td class="fw-bold text-success">${{ "{:,.2f}".format(slip.net_salary) }}</td>
+                    <td>
+                        {% if slip.payment_status == 'Paid' %}
+                            <span class="badge badge-soft-success">Paid</span>
+                        {% else %}
+                            <span class="badge badge-soft-warning">Processing</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{{ url_for('payroll.payslip', detail_id=slip.id) }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                            <i class="bi bi-printer me-1"></i> Print Payslip
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-5">No personal payslips found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

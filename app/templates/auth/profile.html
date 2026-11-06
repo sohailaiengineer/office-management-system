@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% block title %}My Profile{% endblock %}
+{% block page_title %}Account Profile & Security{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- User Overview Card -->
+    <div class="col-lg-4">
+        <div class="card-enterprise p-4 text-center">
+            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3 shadow" style="width: 80px; height: 80px; font-size: 2rem; font-weight: 700;">
+                {{ user.first_name[0] }}{{ user.last_name[0] }}
+            </div>
+            <h5 class="fw-bold mb-1">{{ user.full_name }}</h5>
+            <div class="text-muted small mb-2">@{{ user.username }}</div>
+            <span class="badge bg-primary px-3 py-2 text-uppercase mb-3">{{ user.primary_role }}</span>
+
+            <div class="list-group list-group-flush text-start small border-top pt-3">
+                <div class="list-group-item d-flex justify-content-between px-0">
+                    <span class="text-muted">Email</span>
+                    <span class="fw-semibold">{{ user.email }}</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between px-0">
+                    <span class="text-muted">Phone</span>
+                    <span class="fw-semibold">{{ user.phone or 'Not provided' }}</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between px-0">
+                    <span class="text-muted">Member Since</span>
+                    <span class="fw-semibold">{{ user.created_at.strftime('%b %d, %Y') }}</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between px-0">
+                    <span class="text-muted">Account Status</span>
+                    <span class="badge badge-soft-success">Active</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile & Change Password Tabs -->
+    <div class="col-lg-8">
+        <div class="card-enterprise">
+            <div class="card-header-enterprise">
+                <ul class="nav nav-tabs card-header-tabs" id="profileTabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active fw-semibold" id="edit-tab" data-bs-toggle="tab" data-bs-target="#edit-pane" type="button">
+                            <i class="bi bi-person-lines-fill me-1"></i> Edit Details
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-semibold" id="password-tab" data-bs-toggle="tab" data-bs-target="#password-pane" type="button">
+                            <i class="bi bi-key-fill me-1"></i> Change Password
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="p-4 tab-content">
+                <!-- Tab 1: Edit Profile -->
+                <div class="tab-pane fade show active" id="edit-pane">
+                    <form method="POST" action="{{ url_for('auth.profile') }}">
+                        {{ profile_form.hidden_tag() }}
+                        <input type="hidden" name="update_profile" value="1">
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">First Name</label>
+                                {{ profile_form.first_name(class="form-control") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Last Name</label>
+                                {{ profile_form.last_name(class="form-control") }}
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Email Address</label>
+                                {{ profile_form.email(class="form-control") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Phone Number</label>
+                                {{ profile_form.phone(class="form-control") }}
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary fw-semibold">
+                            <i class="bi bi-check2 me-1"></i> Save Profile Changes
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Tab 2: Change Password -->
+                <div class="tab-pane fade" id="password-pane">
+                    <form method="POST" action="{{ url_for('auth.profile') }}">
+                        {{ password_form.hidden_tag() }}
+                        <input type="hidden" name="change_password" value="1">
+
+                        <div class="mb-3">
+                            <label class="form-label">Current Password</label>
+                            {{ password_form.current_password(class="form-control") }}
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">New Password</label>
+                                {{ password_form.new_password(class="form-control") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Confirm New Password</label>
+                                {{ password_form.confirm_password(class="form-control") }}
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-warning fw-semibold text-dark">
+                            <i class="bi bi-shield-lock me-1"></i> Update Password
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Edit Task — {{ task.title }}{% endblock %}
+{% block page_title %}Edit Sprint Task{% endblock %}
+
+{% block content %}
+<div class="card-enterprise mx-auto" style="max-width: 700px;">
+    <div class="card-header-enterprise">
+        <h6 class="card-title-enterprise"><i class="bi bi-pencil-square me-2 text-primary"></i>Modify Task #{{ task.id }}</h6>
+        <a href="{{ url_for('tasks.view', task_id=task.id) }}" class="btn btn-sm btn-outline-secondary">Cancel</a>
+    </div>
+    <div class="p-4">
+        <form method="POST" action="{{ url_for('tasks.edit', task_id=task.id) }}">
+            {{ form.hidden_tag() }}
+
+            <div class="mb-3">
+                <label class="form-label">Task Title *</label>
+                {{ form.title(class="form-control" + (" is-invalid" if form.title.errors else ""), placeholder="e.g. Integrate Redis caching on employee profile endpoint") }}
+                {% for err in form.title.errors %}
+                    <div class="invalid-feedback">{{ err }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Parent Project *</label>
+                    {{ form.project_id(class="form-select") }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Assignee</label>
+                    {{ form.assigned_employee_id(class="form-select") }}
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">Priority</label>
+                    {{ form.priority(class="form-select") }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Task Status</label>
+                    {{ form.task_status(class="form-select") }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Estimated Hours</label>
+                    {{ form.estimated_hours(class="form-control", placeholder="8.0") }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Due Date *</label>
+                    {{ form.due_date(class="form-control", type="date") }}
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Task Description & Acceptance Criteria</label>
+                {{ form.description(class="form-control", rows="4") }}
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ url_for('tasks.view', task_id=task.id) }}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-enterprise-primary">
+                    <i class="bi bi-check2 me-1"></i> Update Task
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

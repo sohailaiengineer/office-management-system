@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Submit Expense Claim{% endblock %}
+{% block page_title %}Submit Corporate Expense{% endblock %}
+
+{% block content %}
+<div class="card-enterprise mx-auto" style="max-width: 650px;">
+    <div class="card-header-enterprise">
+        <h6 class="card-title-enterprise"><i class="bi bi-receipt me-2 text-danger"></i>Expense Claim Form</h6>
+        <a href="{{ url_for('finance.index') }}" class="btn btn-sm btn-outline-secondary">Cancel</a>
+    </div>
+    <div class="p-4">
+        <form method="POST" action="{{ url_for('finance.create_expense') }}">
+            {{ form.hidden_tag() }}
+
+            <div class="mb-3">
+                <label class="form-label">Expense Title *</label>
+                {{ form.title(class="form-control", placeholder="e.g. Flight ticket for client onsite meeting") }}
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Expense Category *</label>
+                    {{ form.category_id(class="form-select") }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Amount ($) *</label>
+                    {{ form.amount(class="form-control", placeholder="150.00") }}
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Date Incurred *</label>
+                    {{ form.expense_date(class="form-control", type="date") }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Payment Method *</label>
+                    {{ form.payment_method(class="form-select") }}
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Detailed Purpose / Notes</label>
+                {{ form.description(class="form-control", rows="3", placeholder="Provide business justification...") }}
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ url_for('finance.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-danger fw-semibold">
+                    <i class="bi bi-send-fill me-1"></i> Submit for Reimbursement
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

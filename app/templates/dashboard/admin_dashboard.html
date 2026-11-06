@@ -1,0 +1,330 @@
+{% extends 'base.html' %}
+{% block title %}Super Admin Dashboard{% endblock %}
+{% block page_title %}Executive Operations Dashboard{% endblock %}
+
+{% block content %}
+<!-- Super Admin Welcome Banner -->
+<div class="card-enterprise p-4 mb-4 bg-gradient" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; border: none;">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-danger text-uppercase px-2 py-1"><i class="bi bi-shield-lock-fill me-1"></i>Super Admin</span>
+                <span class="text-secondary small">&bull; Enterprise Organization Command Center</span>
+            </div>
+            <h4 class="fw-bold mb-1">Welcome, {{ current_user.full_name }}</h4>
+            <p class="text-secondary mb-0 small">Real-time enterprise overview across all organizational units, personnel, attendance, and financials.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('employees.create') }}" class="btn btn-sm btn-primary">
+                <i class="bi bi-person-plus-fill me-1"></i> Add Employee
+            </a>
+            <a href="{{ url_for('projects.create') }}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-plus-circle me-1"></i> New Project
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Super Admin KPI Metrics Row (8 Core Cards) -->
+<div class="row g-3 mb-4">
+    <!-- 1. Total Employees -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-primary-subtle text-primary">
+                <i class="bi bi-people-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Total Employees</div>
+                <div class="kpi-value">{{ total_employees }}</div>
+                <small class="text-success"><i class="bi bi-check-circle me-1"></i>{{ active_employees }} Active</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Departments -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-info-subtle text-info">
+                <i class="bi bi-diagram-3-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Departments</div>
+                <div class="kpi-value">{{ total_departments }}</div>
+                <small class="text-muted">Organizational Units</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Today's Attendance -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-success-subtle text-success">
+                <i class="bi bi-person-check-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Today's Attendance</div>
+                <div class="kpi-value">{{ today_attendance_count }}</div>
+                <small class="text-muted">{{ att_late }} Late &bull; {{ att_absent }} Absent</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Pending Leaves -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-warning-subtle text-warning">
+                <i class="bi bi-calendar-event-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Pending Leaves</div>
+                <div class="kpi-value">{{ pending_leaves }}</div>
+                <small class="text-warning"><i class="bi bi-clock-history me-1"></i>Awaiting Approval</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Monthly Payroll -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap" style="background-color: #f3e8ff; color: #7e22ce;">
+                <i class="bi bi-cash-stack"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Monthly Payroll</div>
+                <div class="kpi-value">${{ "{:,.0f}".format(monthly_payroll_amount) }}</div>
+                <small class="text-muted">Net Monthly Run</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. Active Projects -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-primary-subtle text-primary">
+                <i class="bi bi-kanban-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Active Projects</div>
+                <div class="kpi-value">{{ active_projects }}</div>
+                <small class="text-primary"><i class="bi bi-activity me-1"></i>Portfolio Execution</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. Pending Tasks -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-danger-subtle text-danger">
+                <i class="bi bi-list-check"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Pending Tasks</div>
+                <div class="kpi-value">{{ pending_tasks }}</div>
+                <small class="text-success">{{ completed_tasks }} Completed</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. Corporate Clients -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-secondary-subtle text-secondary">
+                <i class="bi bi-briefcase-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Corporate Clients</div>
+                <div class="kpi-value">{{ total_clients }}</div>
+                <small class="text-muted">Active Client CRM</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="row g-4 mb-4">
+    <!-- Department Distribution Chart -->
+    <div class="col-lg-7">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart-fill me-2 text-primary"></i>Department Staff Distribution</h6>
+                <a href="{{ url_for('departments.index') }}" class="btn btn-sm btn-link p-0 text-decoration-none">View All</a>
+            </div>
+            <div class="card-body p-4">
+                <div style="height: 260px;">
+                    <canvas id="deptChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Today Doughnut Chart -->
+    <div class="col-lg-5">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-pie-chart-fill me-2 text-success"></i>Today's Attendance Ratio</h6>
+                <a href="{{ url_for('attendance.index') }}" class="btn btn-sm btn-link p-0 text-decoration-none">Details</a>
+            </div>
+            <div class="card-body p-4">
+                <div style="height: 220px;">
+                    <canvas id="attendanceChart"></canvas>
+                </div>
+                <div class="d-flex justify-content-around mt-3 small text-center">
+                    <div>
+                        <div class="fw-bold text-success">{{ att_present }}</div>
+                        <span class="text-muted">Present</span>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-warning">{{ att_late }}</div>
+                        <span class="text-muted">Late</span>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-danger">{{ att_absent }}</div>
+                        <span class="text-muted">Absent</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Row: Pending Leave Approvals & Recent Audit Activities -->
+<div class="row g-4">
+    <!-- Pending Approvals -->
+    <div class="col-lg-6">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2 text-warning"></i>Pending Leave Requests</h6>
+                <a href="{{ url_for('leaves.index') }}" class="btn btn-sm btn-outline-primary py-0">View All</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-enterprise align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Type</th>
+                            <th>Duration</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if pending_approvals_list %}
+                            {% for leave in pending_approvals_list %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ leave.employee.full_name }}</div>
+                                    <small class="text-muted">{{ leave.employee.emp_code }}</small>
+                                </td>
+                                <td><span class="badge bg-light text-dark border">{{ leave.leave_type.name }}</span></td>
+                                <td>
+                                    <div class="small fw-semibold">{{ leave.total_days }} day(s)</div>
+                                    <small class="text-muted">{{ leave.start_date.strftime('%b %d') }} - {{ leave.end_date.strftime('%b %d') }}</small>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('leaves.index') }}" class="btn btn-xs btn-outline-primary">Review</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">
+                                    <i class="bi bi-check2-circle fs-3 text-success d-block mb-1"></i>
+                                    No pending leave applications.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Audit Activities -->
+    <div class="col-lg-6">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-shield-check me-2 text-primary"></i>Recent System Audit Log</h6>
+                <a href="{{ url_for('system.audit_logs') }}" class="btn btn-sm btn-outline-secondary py-0">Full Ledger</a>
+            </div>
+            <div class="p-3">
+                {% if recent_activities %}
+                    <div class="list-group list-group-flush small">
+                        {% for log in recent_activities %}
+                        <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge {% if log.action == 'CREATE' %}bg-success{% elif log.action == 'UPDATE' %}bg-warning text-dark{% elif log.action == 'DELETE' %}bg-danger{% else %}bg-info{% endif %} me-2">
+                                    {{ log.action }}
+                                </span>
+                                <span class="fw-semibold">{{ log.table_name }}</span>
+                                <span class="text-muted">#{{ log.record_id }}</span>
+                                {% if log.user %}
+                                <span class="text-muted">by @{{ log.user.username }}</span>
+                                {% endif %}
+                            </div>
+                            <span class="text-muted">{{ log.created_at.strftime('%H:%M &bull; %b %d') | safe }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-muted">No recent audit records.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Department Distribution Bar Chart
+    const deptCtx = document.getElementById('deptChart');
+    if (deptCtx) {
+        new Chart(deptCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ dept_labels | tojson }},
+                datasets: [{
+                    label: 'Employees',
+                    data: {{ dept_counts | tojson }},
+                    backgroundColor: '#3b82f6',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+    }
+
+    // 2. Attendance Ratio Doughnut
+    const attCtx = document.getElementById('attendanceChart');
+    if (attCtx) {
+        new Chart(attCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Present', 'Late', 'Absent'],
+                datasets: [{
+                    data: [{{ att_present }}, {{ att_late }}, {{ att_absent }}],
+                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                },
+                cutout: '70%'
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+

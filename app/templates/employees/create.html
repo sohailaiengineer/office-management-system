@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block title %}Add New Employee{% endblock %}
+{% block page_title %}Onboard New Workforce Member{% endblock %}
+
+{% block content %}
+<div class="card-enterprise">
+    <div class="card-header-enterprise">
+        <div>
+            <h6 class="card-title-enterprise"><i class="bi bi-person-plus-fill me-2 text-primary"></i>Employee Registration Form</h6>
+            <small class="text-muted">Creates user credentials, primary employee entity, and core personal profile</small>
+        </div>
+        <a href="{{ url_for('employees.index') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back to Roster
+        </a>
+    </div>
+
+    <div class="p-4">
+        <form method="POST" action="{{ url_for('employees.create') }}">
+            {{ form.hidden_tag() }}
+
+            <!-- Section 1: User Credentials & Identity -->
+            <div class="border-bottom pb-3 mb-4">
+                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-shield-lock me-2"></i>1. Account Credentials & Login Details</h6>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">First Name *</label>
+                        {{ form.first_name(class="form-control", placeholder="e.g. Robert") }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Last Name *</label>
+                        {{ form.last_name(class="form-control", placeholder="e.g. Chen") }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Username *</label>
+                        {{ form.username(class="form-control", placeholder="e.g. rchen") }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Email Address *</label>
+                        {{ form.email(class="form-control", placeholder="e.g. rchen@enterprise-oms.com") }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Employment Specifics -->
+            <div class="border-bottom pb-3 mb-4">
+                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-briefcase me-2"></i>2. Job Designation & Organizational Unit</h6>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Employee Code *</label>
+                        {{ form.emp_code(class="form-control", placeholder="e.g. EMP-005") }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Department *</label>
+                        {{ form.department_id(class="form-select") }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Designation *</label>
+                        {{ form.designation_id(class="form-select") }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Reporting Manager</label>
+                        {{ form.manager_id(class="form-select") }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Employment Type *</label>
+                        {{ form.employment_type(class="form-select") }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Date of Joining *</label>
+                        {{ form.date_of_joining(class="form-control", type="date") }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Basic Monthly Salary ($) *</label>
+                        {{ form.basic_salary(class="form-control", placeholder="5000.00") }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Initial Status</label>
+                        {{ form.status(class="form-select") }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Personal Profile Details -->
+            <div class="pb-3 mb-4">
+                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-person-vcard me-2"></i>3. Personal Background & Dossier</h6>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Gender</label>
+                        {{ form.gender(class="form-select") }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Marital Status</label>
+                        {{ form.marital_status(class="form-select") }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Blood Group</label>
+                        {{ form.blood_group(class="form-select") }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Date of Birth</label>
+                        {{ form.dob(class="form-control", type="date") }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">National ID / Passport</label>
+                        {{ form.nid_passport(class="form-control", placeholder="e.g. US-PASS-99881122") }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Nationality</label>
+                        {{ form.nationality(class="form-control") }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Professional Biography</label>
+                        {{ form.bio(class="form-control", rows="3", placeholder="Summary of qualifications and role scope...") }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                <a href="{{ url_for('employees.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-enterprise-primary">
+                    <i class="bi bi-check2-circle me-1"></i> Register Employee & Provision Account
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

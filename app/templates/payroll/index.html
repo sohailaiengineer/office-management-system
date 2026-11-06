@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block title %}Payroll Management{% endblock %}
+{% block page_title %}Payroll & Compensation Administration{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <!-- Generate Payroll Card -->
+    <div class="col-lg-4">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise">
+                <h6 class="card-title-enterprise"><i class="bi bi-calculator me-2 text-primary"></i>Batch Payroll Generator</h6>
+            </div>
+            <div class="p-4">
+                <p class="text-muted small">Executes salary formulas, attendance absence adjustments, and tax calculations for all active personnel.</p>
+                <form method="POST" action="{{ url_for('payroll.generate') }}">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        <label class="form-label">Pay Period Month *</label>
+                        {{ form.month(class="form-select") }}
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Year *</label>
+                        {{ form.year(class="form-control") }}
+                    </div>
+
+                    <button type="submit" class="btn btn-enterprise-primary w-100">
+                        <i class="bi bi-play-circle-fill me-1"></i> Calculate & Run Payroll
+                    </button>
+                </form>
+
+                <div class="pt-3 mt-3 border-top d-flex gap-2">
+                    <a href="{{ url_for('payroll.create_bonus') }}" class="btn btn-sm btn-outline-success flex-grow-1">
+                        <i class="bi bi-award me-1"></i> Record Bonus
+                    </a>
+                    <a href="{{ url_for('payroll.create_deduction') }}" class="btn btn-sm btn-outline-danger flex-grow-1">
+                        <i class="bi bi-dash-circle me-1"></i> Record Deduction
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payroll History Table -->
+    <div class="col-lg-8">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise">
+                <h6 class="card-title-enterprise"><i class="bi bi-cash-stack me-2 text-primary"></i>Processed Payroll Batches</h6>
+                <span class="badge bg-light text-dark border">{{ payrolls|length }} Runs</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-enterprise">
+                    <thead>
+                        <tr>
+                            <th>Batch Reference</th>
+                            <th>Month / Year</th>
+                            <th>Gross Total</th>
+                            <th>Deductions</th>
+                            <th>Net Disbursement</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in payrolls %}
+                        <tr>
+                            <td class="fw-semibold">
+                                <a href="{{ url_for('payroll.view_batch', payroll_id=p.id) }}" class="text-decoration-none">
+                                    {{ p.title }}
+                                </a>
+                            </td>
+                            <td>{{ p.month }}/{{ p.year }}</td>
+                            <td>${{ "{:,.2f}".format(p.total_amount) }}</td>
+                            <td class="text-danger">-${{ "{:,.2f}".format(p.total_deductions) }}</td>
+                            <td class="fw-bold text-success">${{ "{:,.2f}".format(p.net_amount) }}</td>
+                            <td>
+                                {% if p.payroll_status == 'Paid' %}
+                                    <span class="badge badge-soft-success">Paid</span>
+                                {% else %}
+                                    <span class="badge badge-soft-warning">Draft</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ url_for('payroll.view_batch', payroll_id=p.id) }}" class="btn btn-sm btn-outline-primary" title="View Payslips">
+                                    <i class="bi bi-eye"></i> View Batch
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-5">No payroll batches generated yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

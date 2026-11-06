@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Record Bonus{% endblock %}
+{% block page_title %}Award Performance / Festive Bonus{% endblock %}
+
+{% block content %}
+<div class="card-enterprise mx-auto" style="max-width: 600px;">
+    <div class="card-header-enterprise">
+        <h6 class="card-title-enterprise"><i class="bi bi-award-fill me-2 text-success"></i>Employee Bonus Registration</h6>
+        <a href="{{ url_for('payroll.index') }}" class="btn btn-sm btn-outline-secondary">Cancel</a>
+    </div>
+    <div class="p-4">
+        <form method="POST" action="{{ url_for('payroll.create_bonus') }}">
+            {{ form.hidden_tag() }}
+
+            <div class="mb-3">
+                <label class="form-label">Recipient Employee *</label>
+                {{ form.employee_id(class="form-select") }}
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Bonus Type *</label>
+                    {{ form.bonus_type(class="form-select") }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Bonus Amount ($) *</label>
+                    {{ form.amount(class="form-control", placeholder="500.00") }}
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Award Date *</label>
+                {{ form.bonus_date(class="form-control", type="date") }}
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Justification / Reason</label>
+                {{ form.reason(class="form-control", placeholder="e.g. Completed milestone ahead of deadline...") }}
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ url_for('payroll.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-success fw-semibold">
+                    <i class="bi bi-check2 me-1"></i> Record & Authorize Bonus
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

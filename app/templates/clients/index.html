@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}Client Management{% endblock %}
+{% block page_title %}Corporate Client Accounts (CRM){% endblock %}
+
+{% block content %}
+<div class="card-enterprise">
+    <div class="card-header-enterprise flex-wrap gap-3">
+        <div>
+            <h6 class="card-title-enterprise"><i class="bi bi-briefcase-fill me-2 text-primary"></i>Client Directory</h6>
+            <small class="text-muted">Enterprise corporate partners, contracts, and stakeholder interactions</small>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'dept_manager' in session.get('roles', []) %}
+            <a href="{{ url_for('clients.create') }}" class="btn btn-enterprise-primary btn-sm">
+                <i class="bi bi-plus-circle me-1"></i> Add Client Account
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Search Toolbar -->
+    <div class="p-3 bg-light border-bottom">
+        <form method="GET" action="{{ url_for('clients.index') }}" class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="search" class="form-control" placeholder="Search by company name, code, or industry..." value="{{ search }}">
+                </div>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary flex-grow-1"><i class="bi bi-funnel"></i> Search</button>
+                <a href="{{ url_for('clients.index') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Clients Table -->
+    <div class="table-responsive">
+        <table class="table table-enterprise">
+            <thead>
+                <tr>
+                    <th>Client Code</th>
+                    <th>Company Name</th>
+                    <th>Industry</th>
+                    <th>Primary Phone</th>
+                    <th>Email Address</th>
+                    <th>Country</th>
+                    <th>Projects</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in clients %}
+                <tr>
+                    <td><span class="badge bg-light text-dark border fw-bold">{{ c.client_code }}</span></td>
+                    <td class="fw-semibold">
+                        <a href="{{ url_for('clients.view', client_id=c.id) }}" class="text-dark text-decoration-none">
+                            {{ c.company_name }}
+                        </a>
+                    </td>
+                    <td><span class="badge badge-soft-info">{{ c.industry or 'Corporate' }}</span></td>
+                    <td>{{ c.phone or 'N/A' }}</td>
+                    <td>{{ c.email or 'N/A' }}</td>
+                    <td>{{ c.country }}</td>
+                    <td><span class="badge bg-primary-subtle text-primary">{{ c.projects|length }} Active</span></td>
+                    <td class="text-end">
+                        <div class="btn-group btn-group-sm">
+                            <a href="{{ url_for('clients.view', client_id=c.id) }}" class="btn btn-outline-primary" title="Client CRM Dossier">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{{ url_for('clients.edit', client_id=c.id) }}" class="btn btn-outline-secondary" title="Edit Client">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) %}
+                            <form method="POST" action="{{ url_for('clients.delete', client_id=c.id) }}" class="d-inline confirm-delete-form" data-confirm-message="Soft delete client account {{ c.company_name }}?">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-outline-danger" title="Move to Trash">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-5">No corporate client accounts found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

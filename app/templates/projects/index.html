@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}Projects Portfolio{% endblock %}
+{% block page_title %}Enterprise Project Portfolio{% endblock %}
+
+{% block content %}
+<div class="card-enterprise">
+    <div class="card-header-enterprise flex-wrap gap-3">
+        <div>
+            <h6 class="card-title-enterprise"><i class="bi bi-kanban-fill me-2 text-primary"></i>Projects Directory</h6>
+            <small class="text-muted">Track deliverables, deadlines, budget allocations, and milestone progress</small>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) or 'dept_manager' in session.get('roles', []) %}
+            <a href="{{ url_for('projects.create') }}" class="btn btn-enterprise-primary btn-sm">
+                <i class="bi bi-plus-circle me-1"></i> Launch Project
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Status Filters -->
+    <div class="p-3 bg-light border-bottom">
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('projects.index') }}" class="btn btn-sm {% if not selected_status %}btn-primary{% else %}btn-outline-secondary{% endif %}">All Projects</a>
+            <a href="{{ url_for('projects.index', status='Planning') }}" class="btn btn-sm {% if selected_status == 'Planning' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">Planning</a>
+            <a href="{{ url_for('projects.index', status='In-Progress') }}" class="btn btn-sm {% if selected_status == 'In-Progress' %}btn-primary{% else %}btn-outline-primary{% endif %}">In-Progress</a>
+            <a href="{{ url_for('projects.index', status='Completed') }}" class="btn btn-sm {% if selected_status == 'Completed' %}btn-success{% else %}btn-outline-success{% endif %}">Completed</a>
+        </div>
+    </div>
+
+    <!-- Projects Table -->
+    <div class="table-responsive">
+        <table class="table table-enterprise">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Project Name</th>
+                    <th>Client Account</th>
+                    <th>Department</th>
+                    <th>Project Lead</th>
+                    <th>Deadline</th>
+                    <th>Progress</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in projects %}
+                <tr>
+                    <td><code>{{ p.code }}</code></td>
+                    <td>
+                        <a href="{{ url_for('projects.view', project_id=p.id) }}" class="fw-semibold text-dark text-decoration-none">
+                            {{ p.name }}
+                        </a>
+                    </td>
+                    <td>{{ p.client.company_name if p.client else '<span class="text-muted">Internal</span>'|safe }}</td>
+                    <td>{{ p.department.name if p.department else 'N/A' }}</td>
+                    <td>{{ p.lead.full_name if p.lead else 'Unassigned' }}</td>
+                    <td>{{ p.deadline.strftime('%b %d, %Y') }}</td>
+                    <td style="min-width: 140px;">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="progress flex-grow-1" style="height: 6px;">
+                                <div class="progress-bar {% if p.progress == 100 %}bg-success{% else %}bg-primary{% endif %}" style="width: {{ p.progress }}%;"></div>
+                            </div>
+                            <small class="fw-bold text-muted">{{ p.progress }}%</small>
+                        </div>
+                    </td>
+                    <td>
+                        {% if p.project_status == 'Completed' %}
+                            <span class="badge badge-soft-success">Completed</span>
+                        {% elif p.project_status == 'In-Progress' %}
+                            <span class="badge badge-soft-primary">In-Progress</span>
+                        {% elif p.project_status == 'Planning' %}
+                            <span class="badge badge-soft-warning">Planning</span>
+                        {% else %}
+                            <span class="badge badge-soft-secondary">{{ p.project_status }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <div class="btn-group btn-group-sm">
+                            <a href="{{ url_for('projects.view', project_id=p.id) }}" class="btn btn-outline-primary" title="Project Workspace">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) or 'dept_manager' in session.get('roles', []) %}
+                            <a href="{{ url_for('projects.edit', project_id=p.id) }}" class="btn btn-outline-secondary" title="Edit Project">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('projects.delete', project_id=p.id) }}" class="d-inline confirm-delete-form" data-confirm-message="Soft-delete project {{ p.name }} and move to Recycle Bin?">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-outline-danger" title="Move to Trash">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center text-muted py-5">No projects registered.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

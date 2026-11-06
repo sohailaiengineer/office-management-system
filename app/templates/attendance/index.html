@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% block title %}Attendance Management{% endblock %}
+{% block page_title %}Attendance & Time Tracking{% endblock %}
+
+{% block content %}
+<!-- Punch In / Punch Out Interactive Banner -->
+<div class="card-enterprise mb-4 bg-primary text-white p-4">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h5 class="fw-bold mb-1"><i class="bi bi-stopwatch-fill me-2"></i>Biometric & Virtual Attendance Punch</h5>
+            <p class="text-white-50 small mb-0">Record your shift arrival and departure times with automated working hours tracking.</p>
+            {% if today_att %}
+                <div class="mt-3 d-flex flex-wrap gap-3 small">
+                    <span class="badge bg-white text-dark py-2 px-3"><i class="bi bi-box-arrow-in-right text-success me-1"></i>Punched In: {{ today_att.check_in.strftime('%I:%M %p') }}</span>
+                    {% if today_att.check_out %}
+                        <span class="badge bg-white text-dark py-2 px-3"><i class="bi bi-box-arrow-right text-danger me-1"></i>Punched Out: {{ today_att.check_out.strftime('%I:%M %p') }}</span>
+                        <span class="badge bg-success py-2 px-3"><i class="bi bi-hourglass-split me-1"></i>Total: {{ today_att.working_hours }} hrs</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark py-2 px-3"><i class="bi bi-clock me-1"></i>Shift in Progress</span>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <form method="POST" action="{{ url_for('attendance.punch') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {% if not today_att %}
+                    <button type="submit" class="btn btn-light btn-lg fw-bold text-primary shadow">
+                        <i class="bi bi-fingerprint me-2 fs-5"></i> Punch In (Check-In)
+                    </button>
+                {% elif not today_att.check_out %}
+                    <button type="submit" class="btn btn-warning btn-lg fw-bold text-dark shadow">
+                        <i class="bi bi-box-arrow-right me-2 fs-5"></i> Punch Out (Check-Out)
+                    </button>
+                {% else %}
+                    <button type="button" class="btn btn-light btn-lg fw-bold text-success shadow" disabled>
+                        <i class="bi bi-check-all me-2 fs-5"></i> Completed for Today
+                    </button>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Attendance Register -->
+<div class="card-enterprise">
+    <div class="card-header-enterprise flex-wrap gap-3">
+        <div>
+            <h6 class="card-title-enterprise"><i class="bi bi-table me-2 text-primary"></i>Daily Attendance Records</h6>
+            <small class="text-muted">Attendance logs for active workforce</small>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('attendance.shifts') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-clock-history me-1"></i> Shifts & Holidays
+            </a>
+        </div>
+    </div>
+
+    <!-- Date Filter -->
+    <div class="p-3 bg-light border-bottom">
+        <form method="GET" action="{{ url_for('attendance.index') }}" class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="bi bi-calendar me-1"></i> Date</span>
+                    <input type="date" name="date" class="form-control" value="{{ selected_date }}">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-filter"></i> Load Register</button>
+                <a href="{{ url_for('attendance.index') }}" class="btn btn-sm btn-outline-secondary">Today</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-enterprise">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Emp Code</th>
+                    <th>Employee Name</th>
+                    <th>Department</th>
+                    <th>Punch In</th>
+                    <th>Punch Out</th>
+                    <th>Work Hours</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for att in attendances %}
+                <tr>
+                    <td>{{ att.date.strftime('%b %d, %Y') }}</td>
+                    <td><span class="badge bg-light text-dark border">{{ att.employee.emp_code }}</span></td>
+                    <td class="fw-semibold">{{ att.employee.full_name }}</td>
+                    <td>{{ att.employee.department.name if att.employee.department else 'N/A' }}</td>
+                    <td>
+                        {% if att.check_in %}
+                            <span class="text-success"><i class="bi bi-arrow-right-short"></i>{{ att.check_in.strftime('%I:%M %p') }}</span>
+                            {% if att.late_minutes > 0 %}
+                                <span class="badge badge-soft-warning ms-1">{{ att.late_minutes }}m late</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">--:--</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if att.check_out %}
+                            <span class="text-danger"><i class="bi bi-arrow-left-short"></i>{{ att.check_out.strftime('%I:%M %p') }}</span>
+                        {% else %}
+                            <span class="text-muted">--:--</span>
+                        {% endif %}
+                    </td>
+                    <td><strong>{{ att.working_hours }} hrs</strong></td>
+                    <td>
+                        {% if att.attendance_status == 'Present' %}
+                            <span class="badge badge-soft-success">Present</span>
+                        {% elif att.attendance_status == 'Late' %}
+                            <span class="badge badge-soft-warning">Late</span>
+                        {% elif att.attendance_status == 'Absent' %}
+                            <span class="badge badge-soft-danger">Absent</span>
+                        {% else %}
+                            <span class="badge badge-soft-info">{{ att.attendance_status }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-5">No attendance punches recorded for this date.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

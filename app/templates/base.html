@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Office Management System{% endblock %} — OMS Enterprise</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Custom Enterprise Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div id="app-wrapper">
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar">
+            <a href="{{ url_for('dashboard.index') }}" class="sidebar-brand">
+                <i class="bi bi-buildings-fill"></i>
+                <span>OMS Enterprise</span>
+            </a>
+
+            <div class="sidebar-menu">
+                {# ============================================================== #}
+                {# 1. SUPER ADMIN / ADMIN SIDEBAR                                 #}
+                {# ============================================================== #}
+                {% if user_role == 'super_admin' %}
+                    <div class="nav-header">Executive Console</div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('dashboard.index') }}" class="nav-link-custom {% if request.blueprint == 'dashboard' %}active{% endif %}">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>Admin Dashboard</span>
+                        </a>
+                    </div>
+
+                    <div class="nav-header">Workforce & Structure</div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('employees.index') }}" class="nav-link-custom {% if request.blueprint == 'employees' %}active{% endif %}">
+                            <i class="bi bi-people-fill"></i>
+                            <span>Employee Management</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('departments.index') }}" class="nav-link-custom {% if request.blueprint == 'departments' %}active{% endif %}">
+                            <i class="bi bi-diagram-3-fill"></i>
+                            <span>Department Management</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('attendance.index') }}" class="nav-link-custom {% if request.blueprint == 'attendance' %}active{% endif %}">
+                            <i class="bi bi-clock-fill"></i>
+                            <span>Attendance Management</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('leaves.index') }}" class="nav-link-custom {% if request.blueprint == 'leaves' %}active{% endif %}">
+                            <i class="bi bi-calendar2-check-fill"></i>
+                            <span>Leave Management</span>
+                            {% if pending_leaves_count and pending_leaves_count > 0 %}
+                                <span class="badge bg-danger rounded-pill ms-auto">{{ pending_leaves_count }}</span>
+                            {% endif %}
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('payroll.index') }}" class="nav-link-custom {% if request.blueprint == 'payroll' %}active{% endif %}">
+                            <i class="bi bi-cash-coin"></i>
+                            <span>Payroll & Salaries</span>
+                        </a>
+                    </div>
+
+                    <div class="nav-header">Operations & Projects</div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('projects.index') }}" class="nav-link-custom {% if request.blueprint == 'projects' %}active{% endif %}">
+                            <i class="bi bi-kanban-fill"></i>
+                            <span>Projects Management</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('tasks.index') }}" class="nav-link-custom {% if request.blueprint == 'tasks' %}active{% endif %}">
+                            <i class="bi bi-check2-square"></i>
+                            <span>Tasks Management</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('clients.index') }}" class="nav-link-custom {% if request.blueprint == 'clients' %}active{% endif %}">
+                            <i class="bi bi-briefcase-fill"></i>
+                            <span>Client CRM</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('assets.index') }}" class="nav-link-custom {% if request.blueprint == 'assets' %}active{% endif %}">
+                            <i class="bi bi-laptop-fill"></i>
+                            <span>Asset Inventory</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('documents.index') }}" class="nav-link-custom {% if request.blueprint == 'documents' %}active{% endif %}">
+                            <i class="bi bi-folder-fill"></i>
+                            <span>Documents Repository</span>
+                        </a>
+                    </div>
+
+                    <div class="nav-header">Communication & Insights</div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('communication.announcements') }}" class="nav-link-custom {% if request.blueprint == 'communication' and request.endpoint == 'communication.announcements' %}active{% endif %}">
+                            <i class="bi bi-megaphone-fill"></i>
+                            <span>Announcements</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('reports.index') }}" class="nav-link-custom {% if request.blueprint == 'reports' %}active{% endif %}">
+                            <i class="bi bi-bar-chart-line-fill"></i>
+                            <span>Reports & Analytics</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('communication.messages') }}" class="nav-link-custom {% if request.blueprint == 'communication' and request.endpoint == 'communication.messages' %}active{% endif %}">
+                            <i class="bi bi-chat-dots-fill"></i>
+                            <span>Direct Messaging</span>
+                        </a>
+                    </div>
+
+                    <div class="nav-header">Governance & System</div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('system.users') }}" class="nav-link-custom {% if request.blueprint == 'system' and request.endpoint == 'system.users' %}active{% endif %}">
+                            <i class="bi bi-person-badge-fill"></i>
+                            <span>User Accounts & Roles</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('system.settings') }}" class="nav-link-custom {% if request.blueprint == 'system' and request.endpoint == 'system.settings' %}active{% endif %}">
+                            <i class="bi bi-gear-fill"></i>
+                            <span>System Settings</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('system.audit_logs') }}" class="nav-link-custom {% if request.blueprint == 'system' and request.endpoint == 'system.audit_logs' %}active{% endif %}">
+                            <i class="bi bi-shield-check"></i>
+                            <span>Audit Logs</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('recycle_bin.index') }}" class="nav-link-custom {% if request.blueprint == 'recycle_bin' %}active{% endif %}">
+                            <i class="bi bi-trash-fill"></i>
+                            <span>Recycle Bin</span>
+                        </a>
+                    </div>
+
+                {# ============================================================== #}
+                {# 2. HR MANAGER SIDEBAR                                          #}
+                {# ============================================================== #}
+                {% elif user_role == 'hr_manager' %}
+                    <div class="nav-header">HR Operations</div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('dashboard.index') }}" class="nav-link-custom {% if request.blueprint == 'dashboard' %}active{% endif %}">
+                            <i class="bi bi-person-workspace"></i>
+                            <span>HR Dashboard</span>
+                        </a>
+                    </div>
+
+                    <div class="nav-header">Employee Administration</div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('employees.index') }}" class="nav-link-custom {% if request.blueprint == 'employees' and request.endpoint == 'employees.index' %}active{% endif %}">
+                            <i class="bi bi-people-fill"></i>
+                            <span>Employee Records</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('employees.create') }}" class="nav-link-custom {% if request.blueprint == 'employees' and request.endpoint == 'employees.create' %}active{% endif %}">
+                            <i class="bi bi-person-plus-fill"></i>
+                            <span>Employee Registration</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('documents.index') }}" class="nav-link-custom {% if request.blueprint == 'documents' %}active{% endif %}">
+                            <i class="bi bi-file-earmark-person-fill"></i>
+                            <span>Employee Documents</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('departments.index') }}" class="nav-link-custom {% if request.blueprint == 'departments' %}active{% endif %}">
+                            <i class="bi bi-diagram-3-fill"></i>
+                            <span>Departments</span>
+                        </a>
+                    </div>
+
+                    <div class="nav-header">Time & Attendance</div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('attendance.index') }}" class="nav-link-custom {% if request.blueprint == 'attendance' %}active{% endif %}">
+                            <i class="bi bi-clock-history"></i>
+                            <span>Attendance Management</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('leaves.index') }}" class="nav-link-custom {% if request.blueprint == 'leaves' and not request.args.get('status') %}active{% endif %}">
+                            <i class="bi bi-calendar-range-fill"></i>
+                            <span>Leave Management</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('leaves.index', status='Pending') }}" class="nav-link-custom {% if request.blueprint == 'leaves' and request.args.get('status') == 'Pending' %}active{% endif %}">
+                            <i class="bi bi-check2-circle"></i>
+                            <span>Leave Approvals</span>
+                            {% if pending_leaves_count and pending_leaves_count > 0 %}
+                                <span class="badge bg-danger rounded-pill ms-auto">{{ pending_leaves_count }}</span>
+                            {% endif %}
+                        </a>
+                    </div>
+
+                    <div class="nav-header">Payroll & Benefits</div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('payroll.index') }}" class="nav-link-custom {% if request.blueprint == 'payroll' and request.endpoint == 'payroll.index' %}active{% endif %}">
+                            <i class="bi bi-cash-stack"></i>
+                            <span>Payroll Management</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('payroll.create_bonus') }}" class="nav-link-custom {% if request.blueprint == 'payroll' and request.endpoint == 'payroll.create_bonus' %}active{% endif %}">
+                            <i class="bi bi-gift-fill"></i>
+                            <span>Record Bonus</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('payroll.create_deduction') }}" class="nav-link-custom {% if request.blueprint == 'payroll' and request.endpoint == 'payroll.create_deduction' %}active{% endif %}">
+                            <i class="bi bi-dash-circle-fill"></i>
+                            <span>Record Deduction</span>
+                        </a>
+                    </div>
+
+                    <div class="nav-header">Communication & Reports</div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('reports.index') }}" class="nav-link-custom {% if request.blueprint == 'reports' %}active{% endif %}">
+                            <i class="bi bi-file-earmark-bar-graph-fill"></i>
+                            <span>HR Reports</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('communication.announcements') }}" class="nav-link-custom {% if request.blueprint == 'communication' and request.endpoint == 'communication.announcements' %}active{% endif %}">
+                            <i class="bi bi-megaphone-fill"></i>
+                            <span>Announcements</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('communication.notifications') }}" class="nav-link-custom {% if request.blueprint == 'communication' and request.endpoint == 'communication.notifications' %}active{% endif %}">
+                            <i class="bi bi-bell-fill"></i>
+                            <span>HR Notifications</span>
+                            {% if unread_notifications_count > 0 %}
+                                <span class="badge bg-primary rounded-pill ms-auto">{{ unread_notifications_count }}</span>
+                            {% endif %}
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('communication.messages') }}" class="nav-link-custom {% if request.blueprint == 'communication' and request.endpoint == 'communication.messages' %}active{% endif %}">
+                            <i class="bi bi-chat-left-text-fill"></i>
+                            <span>Direct Messaging</span>
+                        </a>
+                    </div>
+
+                {# ============================================================== #}
+                {# 3. DEPARTMENT MANAGER SIDEBAR                                  #}
+                {# ============================================================== #}
+                {% elif user_role == 'dept_manager' %}
+                    <div class="nav-header">Department Console</div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('dashboard.index') }}" class="nav-link-custom {% if request.blueprint == 'dashboard' %}active{% endif %}">
+                            <i class="bi bi-grid-1x2-fill"></i>
+                            <span>Department Dashboard</span>
+                        </a>
+                    </div>
+
+                    <div class="nav-header">My Team & Department</div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('departments.index') }}" class="nav-link-custom {% if request.blueprint == 'departments' %}active{% endif %}">
+                            <i class="bi bi-building"></i>
+                            <span>My Department</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('employees.index') }}" class="nav-link-custom {% if request.blueprint == 'employees' %}active{% endif %}">
+                            <i class="bi bi-people-fill"></i>
+                            <span>Department Employees</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('attendance.index') }}" class="nav-link-custom {% if request.blueprint == 'attendance' %}active{% endif %}">
+                            <i class="bi bi-clock-fill"></i>
+                            <span>Attendance Overview</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('leaves.index') }}" class="nav-link-custom {% if request.blueprint == 'leaves' %}active{% endif %}">
+                            <i class="bi bi-calendar2-check-fill"></i>
+                            <span>Leave Requests</span>
+                            {% if pending_leaves_count and pending_leaves_count > 0 %}
+                                <span class="badge bg-danger rounded-pill ms-auto">{{ pending_leaves_count }}</span>
+                            {% endif %}
+                        </a>
+                    </div>
+
+                    <div class="nav-header">Projects & Tasks</div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('projects.index') }}" class="nav-link-custom {% if request.blueprint == 'projects' %}active{% endif %}">
+                            <i class="bi bi-kanban-fill"></i>
+                            <span>Department Projects</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('tasks.index') }}" class="nav-link-custom {% if request.blueprint == 'tasks' and request.endpoint == 'tasks.index' %}active{% endif %}">
+                            <i class="bi bi-check2-square"></i>
+                            <span>Task Management</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('tasks.create') }}" class="nav-link-custom {% if request.blueprint == 'tasks' and request.endpoint == 'tasks.create' %}active{% endif %}">
+                            <i class="bi bi-plus-square-fill"></i>
+                            <span>Assign Tasks</span>
+                        </a>
+                    </div>
+
+                    <div class="nav-header">Communication & Team</div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('reports.index') }}" class="nav-link-custom {% if request.blueprint == 'reports' %}active{% endif %}">
+                            <i class="bi bi-bar-chart-fill"></i>
+                            <span>Team Reports</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('communication.announcements') }}" class="nav-link-custom {% if request.blueprint == 'communication' and request.endpoint == 'communication.announcements' %}active{% endif %}">
+                            <i class="bi bi-megaphone-fill"></i>
+                            <span>Department Notices</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('communication.notifications') }}" class="nav-link-custom {% if request.blueprint == 'communication' and request.endpoint == 'communication.notifications' %}active{% endif %}">
+                            <i class="bi bi-bell-fill"></i>
+                            <span>Notifications</span>
+                            {% if unread_notifications_count > 0 %}
+                                <span class="badge bg-primary rounded-pill ms-auto">{{ unread_notifications_count }}</span>
+                            {% endif %}
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('communication.messages') }}" class="nav-link-custom {% if request.blueprint == 'communication' and request.endpoint == 'communication.messages' %}active{% endif %}">
+                            <i class="bi bi-chat-left-text-fill"></i>
+                            <span>Direct Messaging</span>
+                        </a>
+                    </div>
+
+                {# ============================================================== #}
+                {# 4. EMPLOYEE SELF-SERVICE SIDEBAR                               #}
+                {# ============================================================== #}
+                {% else %}
+                    <div class="nav-header">Self-Service Portal</div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('dashboard.index') }}" class="nav-link-custom {% if request.blueprint == 'dashboard' %}active{% endif %}">
+                            <i class="bi bi-house-door-fill"></i>
+                            <span>My Dashboard</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('auth.profile') }}" class="nav-link-custom {% if request.blueprint == 'auth' and request.endpoint == 'auth.profile' %}active{% endif %}">
+                            <i class="bi bi-person-fill"></i>
+                            <span>My Profile</span>
+                        </a>
+                    </div>
+
+                    <div class="nav-header">Time & Attendance</div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('attendance.index') }}" class="nav-link-custom {% if request.blueprint == 'attendance' %}active{% endif %}">
+                            <i class="bi bi-clock-fill"></i>
+                            <span>My Attendance</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('leaves.apply') }}" class="nav-link-custom {% if request.blueprint == 'leaves' and request.endpoint == 'leaves.apply' %}active{% endif %}">
+                            <i class="bi bi-calendar-plus-fill"></i>
+                            <span>Apply for Leave</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('leaves.index') }}" class="nav-link-custom {% if request.blueprint == 'leaves' and request.endpoint == 'leaves.index' %}active{% endif %}">
+                            <i class="bi bi-calendar2-check-fill"></i>
+                            <span>My Leave Applications</span>
+                        </a>
+                    </div>
+
+                    <div class="nav-header">Work & Projects</div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('tasks.index') }}" class="nav-link-custom {% if request.blueprint == 'tasks' %}active{% endif %}">
+                            <i class="bi bi-check2-square"></i>
+                            <span>My Tasks</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('projects.index') }}" class="nav-link-custom {% if request.blueprint == 'projects' %}active{% endif %}">
+                            <i class="bi bi-kanban-fill"></i>
+                            <span>My Projects</span>
+                        </a>
+                    </div>
+
+                    <div class="nav-header">Compensation</div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('payroll.index') }}" class="nav-link-custom {% if request.blueprint == 'payroll' %}active{% endif %}">
+                            <i class="bi bi-receipt-cutoff"></i>
+                            <span>My Salary Slips</span>
+                        </a>
+                    </div>
+
+                    <div class="nav-header">Communication & Security</div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('communication.announcements') }}" class="nav-link-custom {% if request.blueprint == 'communication' and request.endpoint == 'communication.announcements' %}active{% endif %}">
+                            <i class="bi bi-megaphone-fill"></i>
+                            <span>Company Notices</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('communication.notifications') }}" class="nav-link-custom {% if request.blueprint == 'communication' and request.endpoint == 'communication.notifications' %}active{% endif %}">
+                            <i class="bi bi-bell-fill"></i>
+                            <span>Notifications</span>
+                            {% if unread_notifications_count > 0 %}
+                                <span class="badge bg-primary rounded-pill ms-auto">{{ unread_notifications_count }}</span>
+                            {% endif %}
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('communication.messages') }}" class="nav-link-custom {% if request.blueprint == 'communication' and request.endpoint == 'communication.messages' %}active{% endif %}">
+                            <i class="bi bi-chat-left-text-fill"></i>
+                            <span>Direct Messaging</span>
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar User Profile Footer -->
+            <div class="sidebar-footer">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle {% if user_role == 'super_admin' %}bg-danger{% elif user_role == 'hr_manager' %}bg-success{% elif user_role == 'dept_manager' %}bg-primary{% else %}bg-info text-dark{% endif %} text-white d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; font-weight: 700;">
+                        {{ session.get('full_name', 'U')[0] }}
+                    </div>
+                    <div class="flex-grow-1 overflow-hidden">
+                        <div class="text-white text-truncate fw-semibold small">{{ session.get('full_name', 'User') }}</div>
+                        <div class="text-truncate" style="font-size: 0.72rem;">
+                            {% if user_role == 'super_admin' %}
+                                <span class="text-danger fw-bold"><i class="bi bi-shield-fill-check me-1"></i>Super Admin</span>
+                            {% elif user_role == 'hr_manager' %}
+                                <span class="text-success fw-bold"><i class="bi bi-person-badge me-1"></i>HR Manager</span>
+                            {% elif user_role == 'dept_manager' %}
+                                <span class="text-info fw-bold"><i class="bi bi-building me-1"></i>Dept Manager</span>
+                                {% if managed_department %}
+                                    <div class="text-muted text-truncate" style="font-size: 0.68rem;">{{ managed_department.name }}</div>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-info"><i class="bi bi-person me-1"></i>Employee</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <a href="{{ url_for('auth.logout') }}" class="text-secondary hover-white" title="Logout">
+                        <i class="bi bi-box-arrow-right fs-5"></i>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main id="main-content">
+            <!-- Top Navbar -->
+            <header class="top-navbar d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="btn btn-sm btn-light d-md-none border" id="sidebarToggle">
+                        <i class="bi bi-list fs-5"></i>
+                    </button>
+                    <div class="d-none d-sm-block">
+                        <h6 class="mb-0 fw-bold">{% block page_title %}Enterprise Console{% endblock %}</h6>
+                        <small class="text-muted">
+                            {% if user_role == 'super_admin' %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Super Admin Console</span>
+                            {% elif user_role == 'hr_manager' %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">HR Management Console</span>
+                            {% elif user_role == 'dept_manager' %}
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                    {{ managed_department.name if managed_department else 'Department' }} Manager Console
+                                </span>
+                            {% else %}
+                                <span class="badge bg-info-subtle text-info border border-info-subtle">Employee Self-Service Portal</span>
+                            {% endif %}
+                            &bull; OMS Enterprise
+                        </small>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    <!-- Notifications Pill -->
+                    <a href="{{ url_for('communication.notifications') }}" class="btn btn-sm btn-light border position-relative" title="Notifications">
+                        <i class="bi bi-bell"></i>
+                        {% if unread_notifications_count > 0 %}
+                            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                                <span class="visually-hidden">New alerts</span>
+                            </span>
+                        {% endif %}
+                    </a>
+
+                    <!-- User Profile Dropdown -->
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-light border dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+                            {% if user_role == 'super_admin' %}
+                                <span class="badge bg-danger text-uppercase">Admin</span>
+                            {% elif user_role == 'hr_manager' %}
+                                <span class="badge bg-success text-uppercase">HR</span>
+                            {% elif user_role == 'dept_manager' %}
+                                <span class="badge bg-primary text-uppercase">Manager</span>
+                            {% else %}
+                                <span class="badge bg-info text-dark text-uppercase">Employee</span>
+                            {% endif %}
+                            <span class="d-none d-md-inline fw-semibold">{{ session.get('full_name', 'User') }}</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border">
+                            <li><h6 class="dropdown-header">{{ session.get('email', '') }}</h6></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}"><i class="bi bi-person me-2"></i>My Profile</a></li>
+                            {% if user_role == 'super_admin' %}
+                            <li><a class="dropdown-item" href="{{ url_for('system.settings') }}"><i class="bi bi-sliders me-2"></i>Settings</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('system.audit_logs') }}"><i class="bi bi-shield-lock me-2"></i>Audit Logs</a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Sign Out</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Alerts Container -->
+            <div class="container-fluid px-4 pt-3">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show shadow-sm d-flex align-items-center gap-2" role="alert">
+                                {% if category == 'success' %}
+                                    <i class="bi bi-check-circle-fill fs-5"></i>
+                                {% elif category == 'danger' or category == 'error' %}
+                                    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                                {% elif category == 'warning' %}
+                                    <i class="bi bi-exclamation-circle-fill fs-5"></i>
+                                {% else %}
+                                    <i class="bi bi-info-circle-fill fs-5"></i>
+                                {% endif %}
+                                <div class="flex-grow-1">{{ message }}</div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            <!-- Page Body -->
+            <div class="container-fluid px-4 py-3">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+            if (toggleBtn && sidebar) {
+                toggleBtn.addEventListener('click', function() {
+                    sidebar.classList.toggle('show');
+                });
+            }
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

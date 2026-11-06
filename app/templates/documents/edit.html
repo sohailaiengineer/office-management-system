@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Edit Document — {{ document.title }}{% endblock %}
+{% block page_title %}Edit Document Details{% endblock %}
+
+{% block content %}
+<div class="card-enterprise mx-auto" style="max-width: 650px;">
+    <div class="card-header-enterprise">
+        <h6 class="card-title-enterprise"><i class="bi bi-pencil-square me-2 text-primary"></i>Document Revision Form</h6>
+        <a href="{{ url_for('documents.index') }}" class="btn btn-sm btn-outline-secondary">Cancel</a>
+    </div>
+    <div class="p-4">
+        <form method="POST" action="{{ url_for('documents.edit', doc_id=document.id) }}" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+
+            <div class="mb-3">
+                <label class="form-label">Document Title *</label>
+                {{ form.title(class="form-control" + (" is-invalid" if form.title.errors else ""), placeholder="e.g. Employee Code of Conduct 2026") }}
+                {% for err in form.title.errors %}
+                    <div class="invalid-feedback">{{ err }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Document Category *</label>
+                    {{ form.category_id(class="form-select") }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Target Department</label>
+                    {{ form.department_id(class="form-select") }}
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Replace Attachment File (Optional)</label>
+                {{ form.file(class="form-control") }}
+                <small class="text-muted" style="font-size: 0.75rem;">Current: {{ document.file_path }}. Uploading a new file will automatically increment document version.</small>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Summary / Description</label>
+                {{ form.description(class="form-control", rows="3") }}
+            </div>
+
+            <div class="mb-4">
+                <div class="form-check">
+                    {{ form.is_confidential(class="form-check-input", id="confCheck") }}
+                    <label class="form-check-label small fw-semibold" for="confCheck">Mark as Confidential (Restricted Circulation)</label>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ url_for('documents.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-enterprise-primary">
+                    <i class="bi bi-check2 me-1"></i> Update Document
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

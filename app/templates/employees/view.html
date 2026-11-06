@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+{% block title %}{{ employee.full_name }} — Dossier{% endblock %}
+{% block page_title %}Employee 360° Dossier{% endblock %}
+
+{% block content %}
+<!-- Top Header / Profile Banner -->
+<div class="card-enterprise mb-4">
+    <div class="p-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold shadow" style="width: 72px; height: 72px; font-size: 1.8rem;">
+                {{ employee.user.first_name[0] }}{{ employee.user.last_name[0] }}
+            </div>
+            <div>
+                <div class="d-flex align-items-center gap-2">
+                    <h4 class="fw-bold mb-0">{{ employee.full_name }}</h4>
+                    <span class="badge bg-light text-dark border">{{ employee.emp_code }}</span>
+                    {% if employee.status == 'Active' %}
+                        <span class="badge badge-soft-success">Active</span>
+                    {% else %}
+                        <span class="badge badge-soft-danger">Deactive</span>
+                    {% endif %}
+                </div>
+                <div class="text-muted small mt-1">
+                    <span class="me-3"><i class="bi bi-briefcase me-1"></i>{{ employee.designation.title if employee.designation else 'General' }}</span>
+                    <span class="me-3"><i class="bi bi-diagram-3 me-1"></i>{{ employee.department.name if employee.department else 'Unassigned' }}</span>
+                    <span><i class="bi bi-envelope me-1"></i>{{ employee.email }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('employees.index') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Roster
+            </a>
+            {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) %}
+            <a href="{{ url_for('employees.edit', emp_id=employee.id) }}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-pencil me-1"></i> Edit Profile
+            </a>
+            <form method="POST" action="{{ url_for('employees.delete', emp_id=employee.id) }}" class="d-inline confirm-delete-form" data-confirm-message="Soft-delete {{ employee.full_name }}?">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-trash me-1"></i> Move to Trash
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Tabs -->
+<div class="card-enterprise">
+    <div class="card-header-enterprise">
+        <ul class="nav nav-tabs card-header-tabs" id="empDossierTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active fw-semibold" data-bs-toggle="tab" data-bs-target="#tab-overview" type="button">
+                    <i class="bi bi-person-lines-fill me-1"></i> Overview
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-semibold" data-bs-toggle="tab" data-bs-target="#tab-contacts" type="button">
+                    <i class="bi bi-telephone-fill me-1"></i> Contacts & Address
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-semibold" data-bs-toggle="tab" data-bs-target="#tab-education" type="button">
+                    <i class="bi bi-mortarboard-fill me-1"></i> Education & Experience
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-semibold" data-bs-toggle="tab" data-bs-target="#tab-skills" type="button">
+                    <i class="bi bi-stars me-1"></i> Skills Matrix
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-semibold" data-bs-toggle="tab" data-bs-target="#tab-emergency" type="button">
+                    <i class="bi bi-heart-pulse-fill me-1"></i> Emergency Contacts
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-semibold" data-bs-toggle="tab" data-bs-target="#tab-assets" type="button">
+                    <i class="bi bi-laptop me-1"></i> Assigned Assets
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <div class="p-4 tab-content">
+        <!-- Tab 1: Overview -->
+        <div class="tab-pane fade show active" id="tab-overview">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <h6 class="fw-bold text-primary mb-3">Employment Information</h6>
+                    <table class="table table-sm table-borderless">
+                        <tr><th class="text-muted w-40">Employee ID:</th><td class="fw-semibold">{{ employee.emp_code }}</td></tr>
+                        <tr><th class="text-muted">Department:</th><td>{{ employee.department.name if employee.department else 'N/A' }}</td></tr>
+                        <tr><th class="text-muted">Designation:</th><td>{{ employee.designation.title if employee.designation else 'N/A' }}</td></tr>
+                        <tr><th class="text-muted">Reporting Manager:</th><td>{{ employee.manager.full_name if employee.manager else 'Executive Head' }}</td></tr>
+                        <tr><th class="text-muted">Date of Joining:</th><td>{{ employee.date_of_joining.strftime('%B %d, %Y') if employee.date_of_joining else 'N/A' }}</td></tr>
+                        <tr><th class="text-muted">Employment Type:</th><td><span class="badge badge-soft-info">{{ employee.employment_type }}</span></td></tr>
+                        {% if user_role in ['super_admin', 'hr_manager'] or (current_user and current_user.employee and current_user.employee.id == employee.id) %}
+                        <tr><th class="text-muted">Basic Salary:</th><td class="fw-bold text-success">${{ "{:,.2f}".format(employee.basic_salary) }} / month</td></tr>
+                        {% endif %}
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="fw-bold text-primary mb-3">Personal Dossier</h6>
+                    <table class="table table-sm table-borderless">
+                        <tr><th class="text-muted w-40">Gender:</th><td>{{ employee.profile.gender if employee.profile else 'N/A' }}</td></tr>
+                        <tr><th class="text-muted">Marital Status:</th><td>{{ employee.profile.marital_status if employee.profile else 'N/A' }}</td></tr>
+                        <tr><th class="text-muted">Blood Group:</th><td><span class="badge badge-soft-danger">{{ employee.profile.blood_group or 'N/A' }}</span></td></tr>
+                        <tr><th class="text-muted">Date of Birth:</th><td>{{ employee.profile.dob.strftime('%b %d, %Y') if employee.profile and employee.profile.dob else 'N/A' }}</td></tr>
+                        <tr><th class="text-muted">Nationality:</th><td>{{ employee.profile.nationality or 'American' }}</td></tr>
+                        <tr><th class="text-muted">National ID / Passport:</th><td>{{ employee.profile.nid_passport or 'N/A' }}</td></tr>
+                    </table>
+                    {% if employee.profile and employee.profile.bio %}
+                    <div class="mt-3 p-3 bg-light rounded small">
+                        <strong>Biography:</strong> {{ employee.profile.bio }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Contacts & Address -->
+        <div class="tab-pane fade" id="tab-contacts">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <h6 class="fw-bold text-primary mb-3">Direct Contact Channels</h6>
+                    <table class="table table-sm table-borderless">
+                        <tr><th class="text-muted w-40">Work Email:</th><td>{{ employee.email }}</td></tr>
+                        <tr><th class="text-muted">Personal Email:</th><td>{{ employee.contacts.personal_email if employee.contacts and employee.contacts.personal_email else 'N/A' }}</td></tr>
+                        <tr><th class="text-muted">Work Phone:</th><td>{{ employee.contacts.work_phone if employee.contacts and employee.contacts.work_phone else employee.user.phone or 'N/A' }}</td></tr>
+                        <tr><th class="text-muted">Personal Phone:</th><td>{{ employee.contacts.personal_phone if employee.contacts and employee.contacts.personal_phone else 'N/A' }}</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="fw-bold text-primary mb-3">Residential Addresses</h6>
+                    {% for addr in employee.addresses %}
+                    <div class="p-3 bg-light rounded mb-2">
+                        <span class="badge bg-secondary mb-1">{{ addr.address_type }} Address</span>
+                        <div>{{ addr.street }}</div>
+                        <div>{{ addr.city }}, {{ addr.state }} {{ addr.zip_code }}</div>
+                        <div class="text-muted small">{{ addr.country }}</div>
+                    </div>
+                    {% else %}
+                    <p class="text-muted small">No residential address records found.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Education & Experience -->
+        <div class="tab-pane fade" id="tab-education">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <h6 class="fw-bold text-primary mb-3">Academic Qualifications</h6>
+                    {% for edu in employee.education %}
+                    <div class="p-3 border rounded mb-2">
+                        <div class="fw-bold">{{ edu.degree }}</div>
+                        <div class="text-muted small">{{ edu.institution }} &bull; Class of {{ edu.passing_year }}</div>
+                        <div class="small mt-1"><span class="badge badge-soft-info">{{ edu.major or 'General' }}</span> &bull; Grade: {{ edu.result or 'Pass' }}</div>
+                    </div>
+                    {% else %}
+                    <p class="text-muted small">No academic qualifications recorded.</p>
+                    {% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <h6 class="fw-bold text-primary mb-3">Prior Professional Experience</h6>
+                    {% for exp in employee.experience %}
+                    <div class="p-3 border rounded mb-2">
+                        <div class="fw-bold">{{ exp.designation }}</div>
+                        <div class="text-muted small">{{ exp.company_name }} &bull; {{ exp.start_date.strftime('%b %Y') }} - {{ exp.end_date.strftime('%b %Y') if exp.end_date else 'Present' }}</div>
+                        <div class="small mt-1 text-secondary">{{ exp.responsibilities }}</div>
+                    </div>
+                    {% else %}
+                    <p class="text-muted small">No prior experience logged.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: Skills Matrix -->
+        <div class="tab-pane fade" id="tab-skills">
+            <h6 class="fw-bold text-primary mb-3">Technical Competencies</h6>
+            <div class="row g-3">
+                {% for skill in employee.skills %}
+                <div class="col-md-4">
+                    <div class="p-3 bg-light rounded border">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold">{{ skill.skill_name }}</span>
+                            <span class="badge badge-soft-success">{{ skill.proficiency_level }}</span>
+                        </div>
+                        <small class="text-muted">{{ skill.years_experience }} years experience</small>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted small">No skills registered.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Tab 5: Emergency Contacts -->
+        <div class="tab-pane fade" id="tab-emergency">
+            <h6 class="fw-bold text-primary mb-3">Next-of-Kin Workplace Safety Directory</h6>
+            <div class="row g-3">
+                {% for ec in employee.emergency_contacts %}
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded border">
+                        <div class="d-flex justify-content-between">
+                            <h6 class="fw-bold mb-1">{{ ec.name }}</h6>
+                            <span class="badge badge-soft-warning">{{ ec.relationship }}</span>
+                        </div>
+                        <div><i class="bi bi-telephone me-1 text-primary"></i>{{ ec.phone }}</div>
+                        {% if ec.address %}<small class="text-muted d-block mt-1">{{ ec.address }}</small>{% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted small">No emergency contacts listed.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Tab 6: Assigned Assets -->
+        <div class="tab-pane fade" id="tab-assets">
+            <h6 class="fw-bold text-primary mb-3">Custody of Organizational Hardware</h6>
+            <div class="table-responsive">
+                <table class="table table-enterprise">
+                    <thead>
+                        <tr>
+                            <th>Asset Tag</th>
+                            <th>Item Name</th>
+                            <th>Handover Date</th>
+                            <th>Handover Condition</th>
+                            <th>Return Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for asgn in employee.assigned_assets %}
+                        <tr>
+                            <td><span class="badge bg-light text-dark border">{{ asgn.asset.asset_tag }}</span></td>
+                            <td class="fw-semibold">{{ asgn.asset.name }}</td>
+                            <td>{{ asgn.assigned_date.strftime('%b %d, %Y') }}</td>
+                            <td><span class="badge badge-soft-info">{{ asgn.condition_at_assign }}</span></td>
+                            <td>
+                                {% if asgn.returned_date %}
+                                    <span class="badge badge-soft-secondary">Returned on {{ asgn.returned_date.strftime('%b %d, %Y') }}</span>
+                                {% else %}
+                                    <span class="badge badge-soft-success">In Active Custody</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">No equipment currently assigned.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

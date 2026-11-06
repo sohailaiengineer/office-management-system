@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% block title %}{{ client.company_name }} — CRM Dossier{% endblock %}
+{% block page_title %}Client CRM Dossier: {{ client.company_name }}{% endblock %}
+
+{% block content %}
+<div class="card-enterprise mb-4">
+    <div class="p-4 bg-light border-bottom d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-primary text-uppercase">{{ client.client_code }}</span>
+                <span class="badge badge-soft-info">{{ client.industry or 'Corporate' }}</span>
+                <span class="badge bg-light text-dark border">{{ client.country }}</span>
+            </div>
+            <h4 class="fw-bold mb-1">{{ client.company_name }}</h4>
+            <div class="text-muted small">
+                <span class="me-3"><i class="bi bi-globe me-1"></i>{{ client.website or 'N/A' }}</span>
+                <span class="me-3"><i class="bi bi-envelope me-1"></i>{{ client.email or 'N/A' }}</span>
+                <span><i class="bi bi-telephone me-1"></i>{{ client.phone or 'N/A' }}</span>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('clients.index') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> All Clients
+            </a>
+            {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'dept_manager' in session.get('roles', []) %}
+            <a href="{{ url_for('clients.edit', client_id=client.id) }}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-pencil me-1"></i> Edit Client
+            </a>
+            {% endif %}
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#logInteractionModal">
+                <i class="bi bi-chat-left-text me-1"></i> Log CRM Interaction
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs: Projects & Interactions -->
+<div class="card-enterprise">
+    <div class="card-header-enterprise">
+        <ul class="nav nav-tabs card-header-tabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active fw-semibold" data-bs-toggle="tab" data-bs-target="#tab-projects" type="button">
+                    <i class="bi bi-kanban me-1"></i> Contracted Projects ({{ client.projects|length }})
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-semibold" data-bs-toggle="tab" data-bs-target="#tab-crm" type="button">
+                    <i class="bi bi-chat-square-text me-1"></i> CRM Interactions ({{ client.interactions|length }})
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <div class="p-4 tab-content">
+        <!-- Tab 1: Contracted Projects -->
+        <div class="tab-pane fade show active" id="tab-projects">
+            <div class="table-responsive">
+                <table class="table table-enterprise">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Project Title</th>
+                            <th>Department</th>
+                            <th>Lead</th>
+                            <th>Budget</th>
+                            <th>Deadline</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in client.projects %}
+                        <tr>
+                            <td><code>{{ p.code }}</code></td>
+                            <td class="fw-semibold">
+                                <a href="{{ url_for('projects.view', project_id=p.id) }}" class="text-dark text-decoration-none">
+                                    {{ p.name }}
+                                </a>
+                            </td>
+                            <td>{{ p.department.name if p.department else 'N/A' }}</td>
+                            <td>{{ p.lead.full_name if p.lead else 'Unassigned' }}</td>
+                            <td>${{ "{:,.2f}".format(p.budget) }}</td>
+                            <td>{{ p.deadline.strftime('%b %d, %Y') }}</td>
+                            <td><span class="badge badge-soft-primary">{{ p.project_status }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">No projects registered under this client account.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab 2: CRM Interactions -->
+        <div class="tab-pane fade" id="tab-crm">
+            <div class="list-group list-group-flush">
+                {% for act in client.interactions %}
+                <div class="list-group-item px-0 pb-3 mb-2 border-bottom">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge {% if act.interaction_type == 'Meeting' %}bg-primary{% elif act.interaction_type == 'Call' %}bg-success{% else %}bg-secondary{% endif %}">
+                                {{ act.interaction_type }}
+                            </span>
+                            <span class="text-muted small">{{ act.interaction_date.strftime('%B %d, %Y') }}</span>
+                        </div>
+                        <small class="text-muted">Conducted by: <strong>{{ act.conducted_by.full_name if act.conducted_by else 'Representative' }}</strong></small>
+                    </div>
+                    <div class="small text-dark mt-1">{{ act.summary }}</div>
+                </div>
+                {% else %}
+                <p class="text-muted small text-center py-4 mb-0">No interactions recorded yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Log Interaction -->
+<div class="modal fade" id="logInteractionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('clients.add_interaction', client_id=client.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h6 class="modal-title fw-bold">Log Interaction with {{ client.company_name }}</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Interaction Channel *</label>
+                        <select name="interaction_type" class="form-select">
+                            <option value="Meeting">Executive Meeting</option>
+                            <option value="Call">Phone Call</option>
+                            <option value="Email">Email Communication</option>
+                            <option value="Demo">Technical Product Demo</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Representative Staff</label>
+                        <select name="conducted_by_id" class="form-select">
+                            {% for e in employees %}
+                                <option value="{{ e.id }}">{{ e.full_name }} ({{ e.department.name if e.department else 'General' }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Summary & Outcomes *</label>
+                        <textarea name="summary" class="form-control" rows="4" required placeholder="Discussion summary, client feedback, next steps..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-primary">Save Log</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

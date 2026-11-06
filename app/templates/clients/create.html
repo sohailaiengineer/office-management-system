@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Create Client Account{% endblock %}
+{% block page_title %}Register Corporate Client{% endblock %}
+
+{% block content %}
+<div class="card-enterprise mx-auto" style="max-width: 700px;">
+    <div class="card-header-enterprise">
+        <h6 class="card-title-enterprise"><i class="bi bi-briefcase-fill me-2 text-primary"></i>Client Registration Form</h6>
+        <a href="{{ url_for('clients.index') }}" class="btn btn-sm btn-outline-secondary">Cancel</a>
+    </div>
+    <div class="p-4">
+        <form method="POST" action="{{ url_for('clients.create') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-8">
+                    <label class="form-label">Company Name *</label>
+                    <input type="text" name="company_name" class="form-control" placeholder="e.g. Apex Global Solutions LLC" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Client Code *</label>
+                    <input type="text" name="client_code" class="form-control" placeholder="e.g. CL-APEX" required>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Industry Sector</label>
+                    <input type="text" name="industry" class="form-control" placeholder="e.g. FinTech, Healthcare, Logistics">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Website URL</label>
+                    <input type="url" name="website" class="form-control" placeholder="https://company.example.com">
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Corporate Email</label>
+                    <input type="email" name="email" class="form-control" placeholder="contact@company.example.com">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Phone Number</label>
+                    <input type="text" name="phone" class="form-control" placeholder="+1-800-555-0199">
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-8">
+                    <label class="form-label">Headquarters Address</label>
+                    <input type="text" name="address" class="form-control" placeholder="100 Financial Way, Suite 400">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Country</label>
+                    <input type="text" name="country" class="form-control" value="USA">
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ url_for('clients.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-enterprise-primary">
+                    <i class="bi bi-check2 me-1"></i> Register Client
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

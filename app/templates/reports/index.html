@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% block title %}Operational Reports Hub (47){% endblock %}
+{% block page_title %}Enterprise Reports & Analytics Hub{% endblock %}
+
+{% block content %}
+<!-- Top Header Banner -->
+<div class="card-enterprise mb-4 bg-primary text-white p-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <h5 class="fw-bold mb-1"><i class="bi bi-bar-chart-line-fill me-2"></i>Executive Operational Reports Catalog</h5>
+            <p class="text-white-50 small mb-0">Browse through 47 comprehensive operational reports generated from live relational database records.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-white text-primary fw-bold py-2 px-3 fs-6">
+                <i class="bi bi-layers-fill me-1"></i> {{ total_reports_count }} Available Reports
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Navigation: Reports Catalog Filter & Selector -->
+    <div class="col-lg-4">
+        <div class="card-enterprise mb-4">
+            <div class="card-header-enterprise">
+                <h6 class="card-title-enterprise"><i class="bi bi-funnel-fill me-2 text-primary"></i>Category Filter</h6>
+            </div>
+            <div class="p-3 bg-light border-bottom">
+                <div class="d-flex flex-wrap gap-1">
+                    <a href="{{ url_for('reports.index') }}" class="btn btn-sm {% if not selected_category %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                        All ({{ total_reports_count }})
+                    </a>
+                    {% for cat in categories %}
+                    <a href="{{ url_for('reports.index', category=cat) }}" class="btn btn-sm {% if selected_category == cat %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                        {{ cat }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Report Selector List -->
+            <div class="list-group list-group-flush" style="max-height: 550px; overflow-y: auto;">
+                {% for rep in catalog %}
+                <a href="{{ url_for('reports.index', report_id=rep.id, category=selected_category) }}" class="list-group-item list-group-item-action p-3 {% if current_report.id == rep.id %}active{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-bold small">{{ rep.title }}</span>
+                        <span class="badge {% if current_report.id == rep.id %}bg-white text-primary{% else %}bg-light text-dark border{% endif %}">{{ rep.category }}</span>
+                    </div>
+                    <small class="{% if current_report.id == rep.id %}text-white-50{% else %}text-muted{% endif %} d-block" style="font-size: 0.75rem;">
+                        {{ rep.description }}
+                    </small>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Active Report Viewer & Export Buttons -->
+    <div class="col-lg-8">
+        <div class="card-enterprise">
+            <div class="card-header-enterprise flex-wrap gap-3">
+                <div>
+                    <span class="badge badge-soft-info mb-1">{{ current_report.category }}</span>
+                    <h5 class="fw-bold mb-0 text-dark">{{ current_report.title }}</h5>
+                    <small class="text-muted">{{ current_report.description }}</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ url_for('reports.export_csv', report_id=current_report.id) }}" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
+                    </a>
+                    <a href="{{ url_for('reports.export_excel', report_id=current_report.id) }}" class="btn btn-sm btn-success">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Export Excel (.xlsx)
+                    </a>
+                </div>
+            </div>
+
+            <!-- Quick In-Table Search -->
+            <div class="p-3 bg-light border-bottom">
+                <div class="input-group input-group-sm" style="max-width: 350px;">
+                    <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" id="tableQuickSearch" class="form-control" placeholder="Quick search in current report...">
+                </div>
+            </div>
+
+            <!-- Report Data Table -->
+            <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+                <table class="table table-enterprise table-searchable mb-0">
+                    <thead>
+                        <tr>
+                            {% for h in headers %}
+                            <th>{{ h }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                        <tr>
+                            {% for cell in row %}
+                            <td>
+                                {% if cell == 'Active' or cell == 'Approved' or cell == 'Present' or cell == 'Paid' or cell == 'Completed' %}
+                                    <span class="badge badge-soft-success">{{ cell }}</span>
+                                {% elif cell == 'Pending' or cell == 'In-Progress' or cell == 'Late' %}
+                                    <span class="badge badge-soft-warning">{{ cell }}</span>
+                                {% elif cell == 'Rejected' or cell == 'Absent' or cell == 'Deactive' %}
+                                    <span class="badge badge-soft-danger">{{ cell }}</span>
+                                {% else %}
+                                    {{ cell }}
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="{{ headers|length }}" class="text-center text-muted py-5">
+                                No records returned by database for this report.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="p-3 bg-light border-top d-flex justify-content-between align-items-center small text-muted">
+                <span>Total Output Records: <strong>{{ rows|length }}</strong></span>
+                <span>Report ID: <code>{{ current_report.id }}</code></span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

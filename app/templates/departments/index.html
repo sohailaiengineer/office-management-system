@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block title %}Departments & Designations{% endblock %}
+{% block page_title %}Department Structure & Hierarchies{% endblock %}
+
+{% block content %}
+<!-- Top Header Actions -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h5 class="fw-bold mb-0">Organizational Departments</h5>
+        <small class="text-muted">Divisions, cost centers, and hierarchical designation grades</small>
+    </div>
+    {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) %}
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('departments.create_designation') }}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-tag-fill me-1"></i> Add Designation
+        </a>
+        <a href="{{ url_for('departments.create') }}" class="btn btn-enterprise-primary btn-sm">
+            <i class="bi bi-plus-circle-fill me-1"></i> Add Department
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Departments Grid Cards -->
+<div class="row g-4 mb-4">
+    {% for dept in departments %}
+    <div class="col-md-6 col-xl-3">
+        <div class="card-enterprise h-100 p-4 d-flex flex-column justify-content-between">
+            <div>
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="badge bg-primary-subtle text-primary fw-bold">{{ dept.code }}</span>
+                    {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) %}
+                    <div class="dropdown">
+                        <button class="btn btn-link text-muted p-0" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border">
+                            <li><a class="dropdown-item" href="{{ url_for('departments.edit', dept_id=dept.id) }}"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+                            <li>
+                                <form method="POST" action="{{ url_for('departments.delete', dept_id=dept.id) }}" class="confirm-delete-form" data-confirm-message="Soft delete department {{ dept.name }}?">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Move to Trash</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+                <h5 class="fw-bold mb-2">{{ dept.name }}</h5>
+                <p class="text-muted small mb-3">{{ dept.description or 'Operational unit.' }}</p>
+            </div>
+
+            <div class="pt-3 border-top d-flex justify-content-between align-items-center small">
+                <div>
+                    <span class="text-muted d-block" style="font-size: 0.72rem;">STAFF MEMBERS</span>
+                    <span class="fw-bold fs-6">{{ dept.employees|length }}</span>
+                </div>
+                <div class="text-end">
+                    <span class="text-muted d-block" style="font-size: 0.72rem;">ANNUAL BUDGET</span>
+                    <span class="fw-bold text-success fs-6">${{ "{:,.0f}".format(dept.budget) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Designations Section -->
+<div class="card-enterprise">
+    <div class="card-header-enterprise">
+        <h6 class="card-title-enterprise"><i class="bi bi-person-badge-fill me-2 text-primary"></i>Designations & Salary Bands</h6>
+        <span class="badge bg-light text-dark border">{{ designations|length }} Titles</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-enterprise">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Designation Title</th>
+                    <th>Department</th>
+                    <th>Salary Grade</th>
+                    <th>Salary Band</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for desig in designations %}
+                <tr>
+                    <td><code>{{ desig.code }}</code></td>
+                    <td class="fw-semibold">{{ desig.title }}</td>
+                    <td>{{ desig.department.name if desig.department else 'Company-Wide' }}</td>
+                    <td><span class="badge badge-soft-info">{{ desig.salary_grade or 'Standard' }}</span></td>
+                    <td>${{ "{:,.0f}".format(desig.min_salary) }} - ${{ "{:,.0f}".format(desig.max_salary) }}</td>
+                    <td class="text-end">
+                        {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) %}
+                        <a href="{{ url_for('departments.edit_designation', desig_id=desig.id) }}" class="btn btn-sm btn-outline-secondary py-0 px-2 me-1" title="Edit Designation">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form method="POST" action="{{ url_for('departments.delete_designation', desig_id=desig.id) }}" class="d-inline confirm-delete-form" data-confirm-message="Soft delete designation {{ desig.title }}?">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Move to Trash">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">No designations configured.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

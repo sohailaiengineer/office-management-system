@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Create Invoice{% endblock %}
+{% block page_title %}Generate Client Billing Invoice{% endblock %}
+
+{% block content %}
+<div class="card-enterprise mx-auto" style="max-width: 650px;">
+    <div class="card-header-enterprise">
+        <h6 class="card-title-enterprise"><i class="bi bi-file-earmark-spreadsheet-fill me-2 text-primary"></i>Invoice Specifications</h6>
+        <a href="{{ url_for('finance.index') }}" class="btn btn-sm btn-outline-secondary">Cancel</a>
+    </div>
+    <div class="p-4">
+        <form method="POST" action="{{ url_for('finance.create_invoice') }}">
+            {{ form.hidden_tag() }}
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Invoice Number *</label>
+                    {{ form.invoice_number(class="form-control", placeholder="e.g. INV-2026-002") }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Client Account *</label>
+                    {{ form.client_id(class="form-select") }}
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Issue Date *</label>
+                    {{ form.issue_date(class="form-control", type="date") }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Due Date *</label>
+                    {{ form.due_date(class="form-control", type="date") }}
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Subtotal ($) *</label>
+                    {{ form.subtotal(class="form-control", id="subtotal_field", placeholder="10000.00") }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Tax Amount ($)</label>
+                    {{ form.tax_amount(class="form-control", id="tax_field", placeholder="500.00") }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Total Amount ($) *</label>
+                    {{ form.total_amount(class="form-control", id="total_field", placeholder="10500.00") }}
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Terms & Notes</label>
+                {{ form.notes(class="form-control", rows="3", placeholder="Deliverables covered, wire transfer directions...") }}
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ url_for('finance.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-enterprise-primary">
+                    <i class="bi bi-file-earmark-check me-1"></i> Issue Invoice
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const sub = document.getElementById('subtotal_field');
+        const tax = document.getElementById('tax_field');
+        const total = document.getElementById('total_field');
+        function calc() {
+            const s = parseFloat(sub.value) || 0;
+            const t = parseFloat(tax.value) || 0;
+            total.value = (s + t).toFixed(2);
+        }
+        if (sub && tax && total) {
+            sub.addEventListener('input', calc);
+            tax.addEventListener('input', calc);
+        }
+    });
+</script>
+{% endblock %}

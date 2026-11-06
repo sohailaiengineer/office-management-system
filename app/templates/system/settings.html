@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}System Settings{% endblock %}
+{% block page_title %}Application Environment & Configuration{% endblock %}
+
+{% block content %}
+<div class="card-enterprise mx-auto" style="max-width: 800px;">
+    <div class="card-header-enterprise">
+        <h6 class="card-title-enterprise"><i class="bi bi-gear-fill me-2 text-primary"></i>Enterprise OMS Configuration</h6>
+    </div>
+    <div class="p-4">
+        <form method="POST" action="{{ url_for('system.settings') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="border-bottom pb-3 mb-4">
+                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-building me-2"></i>Organization Profile</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Company Name</label>
+                        <input type="text" name="company_name" class="form-control" value="{{ settings.get('company_name', 'TechVision Global Enterprises Inc.') }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Official Corporate Email</label>
+                        <input type="email" name="company_email" class="form-control" value="{{ settings.get('company_email', 'contact@techvision-global.com') }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-bottom pb-3 mb-4">
+                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-globe me-2"></i>Localization & Regional Settings</h6>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Default Timezone</label>
+                        <input type="text" name="timezone" class="form-control" value="{{ settings.get('timezone', 'UTC') }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Currency Symbol</label>
+                        <input type="text" name="currency_symbol" class="form-control" value="{{ settings.get('currency_symbol', '$') }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Standard Work Hours / Day</label>
+                        <input type="text" name="standard_work_hours_per_day" class="form-control" value="{{ settings.get('standard_work_hours_per_day', '8.0') }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button type="submit" class="btn btn-enterprise-primary">
+                    <i class="bi bi-check2 me-1"></i> Save Configuration
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

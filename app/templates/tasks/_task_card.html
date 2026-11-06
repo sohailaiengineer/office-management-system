@@ -1,0 +1,36 @@
+<div class="kanban-card">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="badge bg-light text-dark border">{{ t.project.code }}</span>
+        {% if t.priority == 'Urgent' %}
+            <span class="badge badge-soft-danger">Urgent</span>
+        {% elif t.priority == 'High' %}
+            <span class="badge badge-soft-warning">High</span>
+        {% else %}
+            <span class="badge badge-soft-secondary">{{ t.priority }}</span>
+        {% endif %}
+    </div>
+
+    <h6 class="fw-bold mb-2">
+        <a href="{{ url_for('tasks.view', task_id=t.id) }}" class="text-dark text-decoration-none">
+            {{ t.title }}
+        </a>
+    </h6>
+
+    {% if t.description %}
+    <p class="text-muted small mb-2 text-truncate">{{ t.description }}</p>
+    {% endif %}
+
+    <div class="d-flex justify-content-between align-items-center pt-2 border-top small text-muted">
+        <div>
+            <i class="bi bi-clock me-1"></i>{{ t.due_date.strftime('%b %d') }}
+        </div>
+        <div class="d-flex align-items-center gap-1">
+            {% if t.assignments %}
+                <span class="badge bg-light text-dark border"><i class="bi bi-person me-1"></i>{{ t.assignments[0].employee.full_name }}</span>
+            {% else %}
+                <span class="badge bg-light text-muted border">Unassigned</span>
+            {% endif %}
+            <span class="ms-1"><i class="bi bi-chat-left-dots"></i> {{ t.comments|length }}</span>
+        </div>
+    </div>
+</div>

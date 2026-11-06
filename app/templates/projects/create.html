@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Launch Project{% endblock %}
+{% block page_title %}Initiate New Project{% endblock %}
+
+{% block content %}
+<div class="card-enterprise mx-auto" style="max-width: 750px;">
+    <div class="card-header-enterprise">
+        <h6 class="card-title-enterprise"><i class="bi bi-kanban-fill me-2 text-primary"></i>Project Initiation Charter</h6>
+        <a href="{{ url_for('projects.index') }}" class="btn btn-sm btn-outline-secondary">Cancel</a>
+    </div>
+    <div class="p-4">
+        <form method="POST" action="{{ url_for('projects.create') }}">
+            {{ form.hidden_tag() }}
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-8">
+                    <label class="form-label">Project Title *</label>
+                    {{ form.name(class="form-control", placeholder="e.g. NextGen Mobile Banking Application") }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Project Code *</label>
+                    {{ form.code(class="form-control", placeholder="e.g. PRJ-BANK-2026") }}
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Client Account</label>
+                    {{ form.client_id(class="form-select") }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Owning Department</label>
+                    {{ form.department_id(class="form-select") }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Project Lead / Manager</label>
+                    {{ form.lead_id(class="form-select") }}
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">Start Date *</label>
+                    {{ form.start_date(class="form-control", type="date") }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Target Deadline *</label>
+                    {{ form.deadline(class="form-control", type="date") }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Budget ($) *</label>
+                    {{ form.budget(class="form-control", placeholder="50000.00") }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Priority</label>
+                    {{ form.priority(class="form-select") }}
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Project Scope & Deliverables</label>
+                {{ form.description(class="form-control", rows="4", placeholder="Technical architecture, milestones, deliverables...") }}
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ url_for('projects.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-enterprise-primary">
+                    <i class="bi bi-rocket-takeoff-fill me-1"></i> Launch Project
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

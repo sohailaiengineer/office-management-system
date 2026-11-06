@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}Work Shifts & Holidays{% endblock %}
+{% block page_title %}Shift Policies & Official Holidays{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Work Shifts Section -->
+    <div class="col-lg-6">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise">
+                <h6 class="card-title-enterprise"><i class="bi bi-clock-history me-2 text-primary"></i>Work Shifts</h6>
+                <a href="{{ url_for('attendance.create_shift') }}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus-circle me-1"></i> Add Shift
+                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-enterprise">
+                    <thead>
+                        <tr>
+                            <th>Shift Name</th>
+                            <th>Hours</th>
+                            <th>Grace Period</th>
+                            <th>Type</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for shift in shifts %}
+                        <tr>
+                            <td class="fw-semibold">{{ shift.name }}</td>
+                            <td>{{ shift.start_time.strftime('%I:%M %p') }} - {{ shift.end_time.strftime('%I:%M %p') }}</td>
+                            <td>{{ shift.grace_minutes }} mins</td>
+                            <td>
+                                {% if shift.is_night_shift %}
+                                    <span class="badge bg-dark">Night</span>
+                                {% else %}
+                                    <span class="badge badge-soft-primary">Day</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('attendance.edit_shift', shift_id=shift.id) }}" class="btn btn-outline-secondary" title="Edit Shift">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form method="POST" action="{{ url_for('attendance.delete_shift', shift_id=shift.id) }}" class="d-inline confirm-delete-form" data-confirm-message="Soft delete shift {{ shift.name }}?">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-outline-danger" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">No work shifts defined.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Official Holidays Section -->
+    <div class="col-lg-6">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise">
+                <h6 class="card-title-enterprise"><i class="bi bi-calendar-heart-fill me-2 text-danger"></i>Company & Public Holidays</h6>
+                <a href="{{ url_for('attendance.create_holiday') }}" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-plus-circle me-1"></i> Schedule Holiday
+                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-enterprise">
+                    <thead>
+                        <tr>
+                            <th>Holiday Name</th>
+                            <th>Date Range</th>
+                            <th>Duration</th>
+                            <th>Recurrence</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for hol in holidays %}
+                        <tr>
+                            <td class="fw-semibold">{{ hol.name }}</td>
+                            <td>{{ hol.start_date.strftime('%b %d') }} - {{ hol.end_date.strftime('%b %d, %Y') }}</td>
+                            <td><span class="badge badge-soft-info">{{ hol.total_days }} day(s)</span></td>
+                            <td>{{ 'Annual' if hol.is_recurring else 'One-Time' }}</td>
+                            <td class="text-end">
+                                <form method="POST" action="{{ url_for('attendance.delete_holiday', holiday_id=hol.id) }}" class="d-inline confirm-delete-form" data-confirm-message="Delete holiday {{ hol.name }}?">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">No holidays scheduled.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

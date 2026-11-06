@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}Company Announcements{% endblock %}
+{% block page_title %}Internal Announcements & Broadcasts{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Broadcast Announcement Form -->
+    {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) %}
+    <div class="col-lg-4">
+        <div class="card-enterprise">
+            <div class="card-header-enterprise">
+                <h6 class="card-title-enterprise"><i class="bi bi-megaphone-fill me-2 text-primary"></i>Post Announcement</h6>
+            </div>
+            <div class="p-4">
+                <form method="POST" action="{{ url_for('communication.create_announcement') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="mb-3">
+                        <label class="form-label">Notice Title *</label>
+                        <input type="text" name="title" class="form-control" placeholder="e.g. Annual Company Town Hall Meeting" required>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Audience</label>
+                            <select name="target_audience" class="form-select">
+                                <option value="All">All Staff</option>
+                                <option value="Department">Department</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Department</label>
+                            <select name="department_id" class="form-select">
+                                <option value="0">All</option>
+                                {% for d in departments %}
+                                    <option value="{{ d.id }}">{{ d.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Announcement Content *</label>
+                        <textarea name="content" class="form-control" rows="4" placeholder="Draft notice details..." required></textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check">
+                            <input type="checkbox" name="is_pinned" class="form-check-input" id="pinnedCheck">
+                            <label class="form-check-label small fw-semibold" for="pinnedCheck">Pin Announcement to Top</label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-enterprise-primary w-100">
+                        <i class="bi bi-broadcast me-1"></i> Broadcast Announcement
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Announcements List -->
+    <div class="{% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) %}col-lg-8{% else %}col-12{% endif %}">
+        <div class="card-enterprise">
+            <div class="card-header-enterprise">
+                <h6 class="card-title-enterprise"><i class="bi bi-pin-angle-fill me-2 text-danger"></i>Company Notices</h6>
+                <span class="badge bg-light text-dark border">{{ announcements|length }} Published</span>
+            </div>
+            <div class="p-4">
+                {% for a in announcements %}
+                <div class="p-3 mb-3 rounded border {% if a.is_pinned %}border-primary bg-primary-subtle bg-opacity-10{% else %}bg-light{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            {% if a.is_pinned %}
+                                <span class="badge bg-danger"><i class="bi bi-pin-fill"></i> Pinned</span>
+                            {% endif %}
+                            <h5 class="fw-bold mb-0 text-dark">{{ a.title }}</h5>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <small class="text-muted">{{ a.publish_date.strftime('%B %d, %Y') }}</small>
+                            {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) %}
+                            <form method="POST" action="{{ url_for('communication.delete_announcement', ann_id=a.id) }}" class="d-inline confirm-delete-form" data-confirm-message="Delete announcement '{{ a.title }}'?">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger p-0 px-1" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <p class="mb-2 text-secondary">{{ a.content }}</p>
+                    <div class="d-flex justify-content-between align-items-center small text-muted pt-2 border-top">
+                        <span>Target: <span class="badge bg-light text-dark border">{{ a.target_audience }}</span></span>
+                        <span>Scope: {{ a.department.name if a.department else 'All Departments' }}</span>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-5">No company announcements currently posted.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

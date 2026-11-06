@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Edit Designation — {{ designation.title }}{% endblock %}
+{% block page_title %}Modify Job Designation{% endblock %}
+
+{% block content %}
+<div class="card-enterprise mx-auto" style="max-width: 650px;">
+    <div class="card-header-enterprise">
+        <h6 class="card-title-enterprise"><i class="bi bi-pencil-square me-2 text-primary"></i>Modify Designation: {{ designation.title }}</h6>
+        <a href="{{ url_for('departments.index') }}" class="btn btn-sm btn-outline-secondary">Cancel</a>
+    </div>
+    <div class="p-4">
+        <form method="POST" action="{{ url_for('departments.edit_designation', desig_id=designation.id) }}">
+            {{ form.hidden_tag() }}
+
+            <div class="mb-3">
+                <label class="form-label">Designation Title *</label>
+                {{ form.title(class="form-control" + (" is-invalid" if form.title.errors else ""), placeholder="e.g. Lead QA Engineer") }}
+                {% for err in form.title.errors %}
+                    <div class="invalid-feedback">{{ err }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Code *</label>
+                    {{ form.code(class="form-control" + (" is-invalid" if form.code.errors else ""), placeholder="e.g. QA-LEAD") }}
+                    {% for err in form.code.errors %}
+                        <div class="invalid-feedback">{{ err }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Department *</label>
+                    {{ form.department_id(class="form-select") }}
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">Salary Grade</label>
+                    {{ form.salary_grade(class="form-control", placeholder="e.g. Band 4") }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Min Salary ($)</label>
+                    {{ form.min_salary(class="form-control", placeholder="4000.00") }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Max Salary ($)</label>
+                    {{ form.max_salary(class="form-control", placeholder="7000.00") }}
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ url_for('departments.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-enterprise-primary">
+                    <i class="bi bi-check2 me-1"></i> Update Designation
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

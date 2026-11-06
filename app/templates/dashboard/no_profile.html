@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}User Dashboard{% endblock %}
+{% block page_title %}Account Dashboard{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-5">
+    <div class="col-md-7 col-lg-6">
+        <div class="card-enterprise p-5 text-center">
+            <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 72px; height: 72px; font-size: 2rem;">
+                <i class="bi bi-person-badge"></i>
+            </div>
+            <h4 class="fw-bold mb-2">Welcome, {{ user.full_name }}</h4>
+            <p class="text-muted mb-4">Your user account (<code>@{{ user.username }}</code>) is currently active, but does not have a linked personnel employee record. Please contact Human Resources or an Administrator to link your personnel file.</p>
+            <div class="d-flex justify-content-center gap-2">
+                <a href="{{ url_for('auth.profile') }}" class="btn btn-primary">
+                    <i class="bi bi-person me-1"></i> View Account Profile
+                </a>
+                <a href="{{ url_for('communication.announcements') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-megaphone me-1"></i> Company Notices
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}{{ payroll.title }}{% endblock %}
+{% block page_title %}Payroll Batch: {{ payroll.title }}{% endblock %}
+
+{% block content %}
+<div class="card-enterprise mb-4">
+    <div class="p-4 d-flex flex-wrap justify-content-between align-items-center gap-3 bg-light border-bottom">
+        <div>
+            <h5 class="fw-bold mb-1">{{ payroll.title }}</h5>
+            <div class="text-muted small">
+                <span>Month: {{ payroll.month }}/{{ payroll.year }}</span> &bull; 
+                <span>Status: <span class="badge {% if payroll.payroll_status == 'Paid' %}bg-success{% else %}bg-warning text-dark{% endif %}">{{ payroll.payroll_status }}</span></span>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('payroll.index') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Payrolls
+            </a>
+            {% if payroll.payroll_status != 'Paid' and (session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', [])) %}
+            <form method="POST" action="{{ url_for('payroll.mark_paid', payroll_id=payroll.id) }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-success">
+                    <i class="bi bi-check2-circle me-1"></i> Mark All as Paid & Disbursed
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Summary KPI Row -->
+    <div class="row g-0 text-center border-bottom">
+        <div class="col-md-4 p-3 border-end">
+            <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">GROSS DISBURSEMENT</small>
+            <h4 class="fw-bold mb-0 text-dark">${{ "{:,.2f}".format(payroll.total_amount) }}</h4>
+        </div>
+        <div class="col-md-4 p-3 border-end">
+            <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">TOTAL DEDUCTIONS</small>
+            <h4 class="fw-bold mb-0 text-danger">-${{ "{:,.2f}".format(payroll.total_deductions) }}</h4>
+        </div>
+        <div class="col-md-4 p-3">
+            <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">NET PAYROLL EXPENDITURE</small>
+            <h4 class="fw-bold mb-0 text-success">${{ "{:,.2f}".format(payroll.net_amount) }}</h4>
+        </div>
+    </div>
+
+    <!-- Payslips Roster -->
+    <div class="table-responsive">
+        <table class="table table-enterprise">
+            <thead>
+                <tr>
+                    <th>Emp Code</th>
+                    <th>Employee Name</th>
+                    <th>Basic Salary</th>
+                    <th>Allowances</th>
+                    <th>Bonuses</th>
+                    <th>Deductions</th>
+                    <th>Net Salary</th>
+                    <th>Status</th>
+                    <th class="text-end">Salary Slip</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in payroll.details %}
+                <tr>
+                    <td><span class="badge bg-light text-dark border">{{ d.employee.emp_code }}</span></td>
+                    <td class="fw-semibold">{{ d.employee.full_name }}</td>
+                    <td>${{ "{:,.2f}".format(d.basic) }}</td>
+                    <td>${{ "{:,.2f}".format(d.allowances) }}</td>
+                    <td class="text-success">+${{ "{:,.2f}".format(d.bonuses_total) }}</td>
+                    <td class="text-danger">-${{ "{:,.2f}".format(d.deductions_total) }}</td>
+                    <td class="fw-bold text-success">${{ "{:,.2f}".format(d.net_salary) }}</td>
+                    <td>
+                        {% if d.payment_status == 'Paid' %}
+                            <span class="badge badge-soft-success">Paid</span>
+                        {% else %}
+                            <span class="badge badge-soft-warning">Unpaid</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{{ url_for('payroll.payslip', detail_id=d.id) }}" class="btn btn-sm btn-outline-primary" target="_blank" title="Print Salary Slip">
+                            <i class="bi bi-printer me-1"></i> Payslip
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center text-muted py-5">No detail payslips generated.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

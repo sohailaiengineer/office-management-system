@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+{% block title %}Finance & Accounting{% endblock %}
+{% block page_title %}Financial Ledger & Invoicing{% endblock %}
+
+{% block content %}
+<!-- Financial KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-danger-subtle text-danger">
+                <i class="bi bi-receipt"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Approved Expenses</div>
+                <div class="kpi-value text-danger">${{ "{:,.2f}".format(total_expense) }}</div>
+                <small class="text-muted">Disbursed corporate claims</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-primary-subtle text-primary">
+                <i class="bi bi-file-earmark-text-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Total Invoiced</div>
+                <div class="kpi-value">${{ "{:,.2f}".format(total_invoiced) }}</div>
+                <small class="text-muted">Client receivables billed</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-success-subtle text-success">
+                <i class="bi bi-cash-coin"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Payments Received</div>
+                <div class="kpi-value text-success">${{ "{:,.2f}".format(total_received) }}</div>
+                <small class="text-success"><i class="bi bi-check-all me-1"></i>Settled revenue</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs: Expenses & Invoices -->
+<div class="card-enterprise">
+    <div class="card-header-enterprise flex-wrap gap-2">
+        <ul class="nav nav-tabs card-header-tabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active fw-semibold" data-bs-toggle="tab" data-bs-target="#tab-expenses" type="button">
+                    <i class="bi bi-receipt me-1"></i> Corporate Expenses
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-semibold" data-bs-toggle="tab" data-bs-target="#tab-invoices" type="button">
+                    <i class="bi bi-file-earmark-spreadsheet-fill me-1"></i> Client Invoices
+                </button>
+            </li>
+        </ul>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('finance.create_expense') }}" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-plus-circle me-1"></i> Submit Expense
+            </a>
+            {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) %}
+            <a href="{{ url_for('finance.create_invoice') }}" class="btn btn-sm btn-enterprise-primary">
+                <i class="bi bi-plus-circle me-1"></i> Create Invoice
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="p-4 tab-content">
+        <!-- Tab 1: Expenses -->
+        <div class="tab-pane fade show active" id="tab-expenses">
+            <div class="table-responsive">
+                <table class="table table-enterprise">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Title & Description</th>
+                            <th>Category</th>
+                            <th>Claimant</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) %}
+                            <th class="text-end">Approval</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exp in expenses %}
+                        <tr>
+                            <td>{{ exp.expense_date.strftime('%b %d, %Y') }}</td>
+                            <td>
+                                <div class="fw-semibold">{{ exp.title }}</div>
+                                <small class="text-muted">{{ exp.description or 'No details' }}</small>
+                            </td>
+                            <td><span class="badge bg-light text-dark border">{{ exp.category.name if exp.category else 'General' }}</span></td>
+                            <td>{{ exp.paid_by.full_name if exp.paid_by else 'Finance Desk' }}</td>
+                            <td class="fw-bold">${{ "{:,.2f}".format(exp.amount) }}</td>
+                            <td>
+                                {% if exp.expense_status == 'Approved' %}
+                                    <span class="badge badge-soft-success">Approved</span>
+                                {% elif exp.expense_status == 'Pending' %}
+                                    <span class="badge badge-soft-warning">Pending</span>
+                                {% else %}
+                                    <span class="badge badge-soft-danger">{{ exp.expense_status }}</span>
+                                {% endif %}
+                            </td>
+                            {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) %}
+                            <td class="text-end">
+                                {% if exp.expense_status == 'Pending' %}
+                                <div class="btn-group btn-group-sm">
+                                    <form method="POST" action="{{ url_for('finance.approve_expense', exp_id=exp.id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="action" value="Approved">
+                                        <button type="submit" class="btn btn-outline-success" title="Approve Claim">
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('finance.approve_expense', exp_id=exp.id) }}" class="d-inline ms-1">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="action" value="Rejected">
+                                        <button type="submit" class="btn btn-outline-danger" title="Reject Claim">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                                {% else %}
+                                <span class="text-muted small">Processed</span>
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-5">No expense claims recorded.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab 2: Invoices -->
+        <div class="tab-pane fade" id="tab-invoices">
+            <div class="table-responsive">
+                <table class="table table-enterprise">
+                    <thead>
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Client</th>
+                            <th>Issue Date</th>
+                            <th>Due Date</th>
+                            <th>Total Amount</th>
+                            <th>Paid Amount</th>
+                            <th>Status</th>
+                            {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) %}
+                            <th class="text-end">Record Payment</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inv in invoices %}
+                        <tr>
+                            <td><span class="badge bg-light text-dark border fw-bold">{{ inv.invoice_number }}</span></td>
+                            <td class="fw-semibold">{{ inv.client.company_name if inv.client else 'General Client' }}</td>
+                            <td>{{ inv.issue_date.strftime('%b %d, %Y') }}</td>
+                            <td>{{ inv.due_date.strftime('%b %d, %Y') }}</td>
+                            <td class="fw-bold">${{ "{:,.2f}".format(inv.total_amount) }}</td>
+                            <td class="text-success">${{ "{:,.2f}".format(inv.amount_paid) }}</td>
+                            <td>
+                                {% if inv.payment_status == 'Paid' %}
+                                    <span class="badge badge-soft-success">Paid</span>
+                                {% elif inv.payment_status == 'Partially-Paid' %}
+                                    <span class="badge badge-soft-warning">Partially Paid</span>
+                                {% else %}
+                                    <span class="badge badge-soft-primary">{{ inv.payment_status }}</span>
+                                {% endif %}
+                            </td>
+                            {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) %}
+                            <td class="text-end">
+                                {% if inv.payment_status != 'Paid' %}
+                                <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#payModal{{ inv.id }}">
+                                    <i class="bi bi-cash-coin me-1"></i> Add Payment
+                                </button>
+
+                                <!-- Payment Modal -->
+                                <div class="modal fade" id="payModal{{ inv.id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content text-start">
+                                            <form method="POST" action="{{ url_for('finance.record_payment', inv_id=inv.id) }}">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <div class="modal-header">
+                                                    <h6 class="modal-title fw-bold">Record Payment for {{ inv.invoice_number }}</h6>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Payment Amount ($) *</label>
+                                                        <input type="number" step="0.01" name="amount" class="form-control" value="{{ inv.total_amount - inv.amount_paid }}" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Payment Method *</label>
+                                                        <select name="payment_method" class="form-select">
+                                                            <option value="Bank Transfer">Bank Transfer</option>
+                                                            <option value="Credit Card">Credit Card</option>
+                                                            <option value="Wire Transfer">Wire Transfer</option>
+                                                            <option value="Cheque">Corporate Cheque</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Transaction Reference #</label>
+                                                        <input type="text" name="transaction_ref" class="form-control" placeholder="e.g. TXN-1092837">
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-sm btn-success">Save Payment</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <span class="badge badge-soft-success"><i class="bi bi-check-all"></i> Settled</span>
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-5">No client invoices registered.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Request Equipment{% endblock %}
+{% block page_title %}Requisition of Office Hardware{% endblock %}
+
+{% block content %}
+<div class="card-enterprise mx-auto" style="max-width: 600px;">
+    <div class="card-header-enterprise">
+        <h6 class="card-title-enterprise"><i class="bi bi-laptop me-2 text-primary"></i>Equipment Requisition</h6>
+        <a href="{{ url_for('assets.index') }}" class="btn btn-sm btn-outline-secondary">Cancel</a>
+    </div>
+    <div class="p-4">
+        <form method="POST" action="{{ url_for('assets.request_asset') }}">
+            {{ form.hidden_tag() }}
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Asset Category *</label>
+                    {{ form.category_id(class="form-select") }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Urgency Priority</label>
+                    {{ form.priority(class="form-select") }}
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Business Justification & Specifications *</label>
+                {{ form.reason(class="form-control", rows="4", placeholder="Explain why this equipment is needed for your project responsibilities...") }}
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ url_for('assets.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-enterprise-primary">
+                    <i class="bi bi-send-fill me-1"></i> Submit Equipment Request
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

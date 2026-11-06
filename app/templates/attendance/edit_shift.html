@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Edit Shift — {{ shift.name }}{% endblock %}
+{% block page_title %}Modify Work Shift Policy{% endblock %}
+
+{% block content %}
+<div class="card-enterprise mx-auto" style="max-width: 600px;">
+    <div class="card-header-enterprise">
+        <h6 class="card-title-enterprise"><i class="bi bi-pencil-square me-2 text-primary"></i>Modify Shift: {{ shift.name }}</h6>
+        <a href="{{ url_for('attendance.shifts') }}" class="btn btn-sm btn-outline-secondary">Cancel</a>
+    </div>
+    <div class="p-4">
+        <form method="POST" action="{{ url_for('attendance.edit_shift', shift_id=shift.id) }}">
+            {{ form.hidden_tag() }}
+
+            <div class="mb-3">
+                <label class="form-label">Shift Name *</label>
+                {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else ""), placeholder="e.g. Morning Shift A") }}
+                {% for err in form.name.errors %}
+                    <div class="invalid-feedback">{{ err }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Start Time *</label>
+                    {{ form.start_time(class="form-control", type="time") }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">End Time *</label>
+                    {{ form.end_time(class="form-control", type="time") }}
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label">Late Arrival Grace (Minutes)</label>
+                    {{ form.grace_minutes(class="form-control") }}
+                </div>
+                <div class="col-md-6 d-flex align-items-center pt-4">
+                    <div class="form-check">
+                        {{ form.is_night_shift(class="form-check-input", id="nightCheck") }}
+                        <label class="form-check-label fw-semibold small" for="nightCheck">Overnight Shift</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ url_for('attendance.shifts') }}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-enterprise-primary">
+                    <i class="bi bi-check2 me-1"></i> Update Shift
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

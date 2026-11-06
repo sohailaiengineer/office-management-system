@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% block title %}{{ task.title }} — Task Workspace{% endblock %}
+{% block page_title %}Task: {{ task.title }}{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Main Task Details & Discussion -->
+    <div class="col-lg-8">
+        <div class="card-enterprise mb-4">
+            <div class="p-4 bg-light border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary text-uppercase">{{ task.project.code }}</span>
+                    {% if task.priority == 'Urgent' %}
+                        <span class="badge badge-soft-danger">Urgent Priority</span>
+                    {% elif task.priority == 'High' %}
+                        <span class="badge badge-soft-warning">High Priority</span>
+                    {% elif task.priority == 'Medium' %}
+                        <span class="badge badge-soft-info">Medium Priority</span>
+                    {% else %}
+                        <span class="badge badge-soft-secondary">{{ task.priority }}</span>
+                    {% endif %}
+                    <span class="badge bg-dark-subtle text-dark border">{{ task.task_status }}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ url_for('tasks.index') }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Board
+                    </a>
+                    {% if user_role in ['super_admin', 'dept_manager', 'hr_manager'] %}
+                    <a href="{{ url_for('tasks.edit', task_id=task.id) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil me-1"></i> Edit Task
+                    </a>
+                    {% endif %}
+                    {% if user_role in ['super_admin', 'dept_manager'] %}
+                    <form method="POST" action="{{ url_for('tasks.delete', task_id=task.id) }}" class="d-inline confirm-delete-form" data-confirm-message="Move task {{ task.title }} to Recycle Bin?">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Move to Trash">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="p-4">
+                <h4 class="fw-bold mb-3">{{ task.title }}</h4>
+                <div class="p-3 bg-light rounded border mb-4">
+                    <h6 class="fw-bold text-muted small text-uppercase mb-2" style="font-size: 0.72rem;">SPECIFICATIONS & DESCRIPTION</h6>
+                    <p class="mb-0">{{ task.description or 'No detailed description provided for this work item.' }}</p>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="small fw-bold">Overall Task Completion</span>
+                        <span class="badge bg-primary">{{ task.completion_percentage }}%</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar {% if task.completion_percentage == 100 %}bg-success{% else %}bg-primary{% endif %}" role="progressbar" style="width: {{ task.completion_percentage }}%;" aria-valuenow="{{ task.completion_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+
+                <!-- Discussion & Comments Section -->
+                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-chat-left-dots me-2"></i>Task Activity, Notes & Discussion ({{ task.comments|length }})</h6>
+                <div class="mb-4">
+                    {% for c in task.comments %}
+                    <div class="p-3 border rounded mb-2 bg-light">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold small">{{ c.user.full_name }}</span>
+                            <span class="text-muted small" style="font-size: 0.72rem;">{{ c.created_at.strftime('%b %d, %Y %H:%M') }}</span>
+                        </div>
+                        <div class="small">{{ c.comment }}</div>
+                    </div>
+                    {% else %}
+                    <p class="text-muted small">No progress notes or comments posted yet.</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Add Comment Form -->
+                <form method="POST" action="{{ url_for('tasks.view', task_id=task.id) }}">
+                    {{ comment_form.hidden_tag() }}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Post a Note or Update</label>
+                        {{ comment_form.comment(class="form-control", rows="3", placeholder="Share technical progress, milestones, or questions...") }}
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary fw-semibold">
+                        <i class="bi bi-chat-dots me-1"></i> Post Comment
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Sidebar Controls -->
+    <div class="col-lg-4">
+        <!-- Status Update Card -->
+        <div class="card-enterprise mb-4">
+            <div class="card-header-enterprise">
+                <h6 class="card-title-enterprise"><i class="bi bi-sliders me-2 text-primary"></i>Status & Progress Update</h6>
+            </div>
+            <div class="p-4">
+                <form method="POST" action="{{ url_for('tasks.update_status', task_id=task.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Current Status</label>
+                        <select name="task_status" class="form-select form-select-sm">
+                            <option value="To-Do" {% if task.task_status in ['To-Do', 'Pending'] %}selected{% endif %}>To-Do / Pending</option>
+                            <option value="In-Progress" {% if task.task_status in ['In-Progress', 'In Progress'] %}selected{% endif %}>In-Progress</option>
+                            <option value="Review" {% if task.task_status in ['Review', 'Under Review'] %}selected{% endif %}>Review / Under Review</option>
+                            <option value="Completed" {% if task.task_status == 'Completed' %}selected{% endif %}>Completed</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Completion Percentage (0-100%)</label>
+                        <input type="number" name="completion_percentage" class="form-control form-control-sm" min="0" max="100" value="{{ task.completion_percentage }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Progress Remarks (Optional)</label>
+                        <textarea name="progress_note" class="form-control form-control-sm" rows="2" placeholder="e.g. Completed initial code review and unit tests..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-sm w-100 fw-semibold">
+                        <i class="bi bi-check2-circle me-1"></i> Update Status & Progress
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Task Metadata Card -->
+        <div class="card-enterprise mb-4">
+            <div class="card-header-enterprise">
+                <h6 class="card-title-enterprise"><i class="bi bi-info-circle me-2 text-primary"></i>Work Item Metadata</h6>
+            </div>
+            <div class="p-4">
+                <table class="table table-sm table-borderless small mb-0">
+                    <tr><th class="text-muted w-40">Project:</th><td><strong>{{ task.project.name }}</strong> ({{ task.project.code }})</td></tr>
+                    <tr><th class="text-muted">Department:</th><td>{{ task.project.department.name if task.project and task.project.department else 'General' }}</td></tr>
+                    <tr><th class="text-muted">Target Deadline:</th><td class="text-danger fw-semibold">{{ task.due_date.strftime('%B %d, %Y') if task.due_date else 'N/A' }}</td></tr>
+                    <tr><th class="text-muted">Estimated Hours:</th><td>{{ task.estimated_hours }} hrs</td></tr>
+                    <tr><th class="text-muted">Actual Hours:</th><td>{{ task.actual_hours }} hrs</td></tr>
+                    <tr><th class="text-muted">Created By:</th><td>{{ task.created_by_emp.full_name if task.created_by_emp else 'System Admin' }}</td></tr>
+                    <tr><th class="text-muted">Assigned To:</th><td>
+                        {% for a in task.assignments %}
+                            <span class="badge bg-light text-dark border"><i class="bi bi-person me-1"></i>{{ a.employee.full_name }}</span>
+                        {% else %}
+                            <span class="text-muted">Unassigned</span>
+                        {% endfor %}
+                    </td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

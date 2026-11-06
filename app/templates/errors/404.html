@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Page Not Found (404){% endblock %}
+{% block page_title %}Error 404 &bull; Page Not Found{% endblock %}
+
+{% block content %}
+<div class="card-enterprise text-center p-5 mx-auto" style="max-width: 600px;">
+    <div class="display-1 text-primary fw-bold mb-3">404</div>
+    <h4 class="fw-bold mb-2">Resource Not Found</h4>
+    <p class="text-muted small mb-4">The page or database record you are attempting to access does not exist or may have been moved to the Recycle Bin.</p>
+    <div>
+        <a href="{{ url_for('dashboard.index') }}" class="btn btn-enterprise-primary">
+            <i class="bi bi-house-door-fill me-1"></i> Return to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}

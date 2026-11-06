@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Users & RBAC{% endblock %}
+{% block page_title %}User Accounts & Role Permissions{% endblock %}
+
+{% block content %}
+<div class="card-enterprise">
+    <div class="card-header-enterprise flex-wrap gap-3">
+        <div>
+            <h6 class="card-title-enterprise"><i class="bi bi-person-badge-fill me-2 text-primary"></i>System User Accounts</h6>
+            <small class="text-muted">Manage system authentication credentials, role assignments, and account statuses</small>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-enterprise">
+            <thead>
+                <tr>
+                    <th>User ID</th>
+                    <th>Full Name</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Assigned Roles</th>
+                    <th>Admin Status</th>
+                    <th>Account Status</th>
+                    <th class="text-end">Assign Role</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td><code>#{{ u.id }}</code></td>
+                    <td class="fw-semibold">{{ u.full_name }}</td>
+                    <td>@{{ u.username }}</td>
+                    <td>{{ u.email }}</td>
+                    <td>
+                        {% for r in u.role_names %}
+                            <span class="badge badge-soft-primary me-1">{{ r }}</span>
+                        {% else %}
+                            <span class="text-muted small">No roles</span>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% if u.is_admin %}
+                            <span class="badge bg-danger">Super Admin</span>
+                        {% else %}
+                            <span class="badge bg-light text-dark border">Standard</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if u.status == 'Active' %}
+                            <span class="badge badge-soft-success">Active</span>
+                        {% else %}
+                            <span class="badge badge-soft-danger">Deactive</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#assignRoleModal{{ u.id }}">
+                            <i class="bi bi-shield-plus me-1"></i> Add Role
+                        </button>
+                        <form method="POST" action="{{ url_for('system.toggle_status', user_id=u.id) }}" class="d-inline ms-1 confirm-delete-form" data-confirm-message="Toggle status for user {{ u.username }}?">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-sm {% if u.status == 'Active' %}btn-outline-warning{% else %}btn-outline-success{% endif %}" title="Toggle Active/Deactive">
+                                <i class="bi {% if u.status == 'Active' %}bi-person-slash{% else %}bi-person-check{% endif %}"></i>
+                            </button>
+                        </form>
+
+                        <!-- Modal: Assign Role -->
+                        <div class="modal fade" id="assignRoleModal{{ u.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content text-start">
+                                    <form method="POST" action="{{ url_for('system.assign_role', user_id=u.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <div class="modal-header">
+                                            <h6 class="modal-title fw-bold">Assign Role to {{ u.full_name }}</h6>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">Select System Role *</label>
+                                                <select name="role_id" class="form-select">
+                                                    {% for r in roles %}
+                                                        <option value="{{ r.id }}">{{ r.display_name }} ({{ r.name }})</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn btn-sm btn-primary">Assign Role</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-5">No user records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

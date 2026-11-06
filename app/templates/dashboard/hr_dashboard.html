@@ -1,0 +1,345 @@
+{% extends 'base.html' %}
+{% block title %}HR Manager Dashboard{% endblock %}
+{% block page_title %}Human Resources Management Console{% endblock %}
+
+{% block content %}
+<!-- HR Manager Hero Banner -->
+<div class="card-enterprise p-4 mb-4 bg-gradient" style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); color: white; border: none;">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-light text-success text-uppercase px-2 py-1"><i class="bi bi-person-badge-fill me-1"></i>HR Operations</span>
+                <span class="text-white-50 small">&bull; Organization-wide Workforce Portal</span>
+            </div>
+            <h4 class="fw-bold mb-1">Welcome, {{ current_user.full_name }} (HR Manager)</h4>
+            <p class="text-white-50 mb-0 small">Manage workforce records, attendance compliance, leave authorizations, and monthly compensation runs.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('employees.create') }}" class="btn btn-sm btn-light text-success fw-semibold">
+                <i class="bi bi-person-plus-fill me-1"></i> Register Employee
+            </a>
+            <a href="{{ url_for('leaves.index', status='Pending') }}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-calendar2-check me-1"></i> Review Leaves
+            </a>
+            <a href="{{ url_for('payroll.index') }}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-cash-stack me-1"></i> Payroll
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- HR KPI Metrics Row (8 Targeted Cards) -->
+<div class="row g-3 mb-4">
+    <!-- 1. Total Employees -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-success-subtle text-success">
+                <i class="bi bi-people-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Total Headcount</div>
+                <div class="kpi-value">{{ total_employees }}</div>
+                <small class="text-success"><i class="bi bi-check-circle me-1"></i>{{ active_employees }} Active</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. New Joiners (Last 60 Days) -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-primary-subtle text-primary">
+                <i class="bi bi-person-badge-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">New Hires</div>
+                <div class="kpi-value">{{ new_employees_count }}</div>
+                <small class="text-muted">Recent Onboarding</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Employees on Leave Today -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-info-subtle text-info">
+                <i class="bi bi-calendar-x-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">On Leave Today</div>
+                <div class="kpi-value">{{ employees_on_leave_today }}</div>
+                <small class="text-muted">Approved Leaves</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Today's Attendance -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-success-subtle text-success">
+                <i class="bi bi-clock-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Present Today</div>
+                <div class="kpi-value">{{ today_attendance }}</div>
+                <small class="text-muted">{{ att_late }} Late &bull; {{ att_absent }} Absent</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Pending Leave Applications -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-warning-subtle text-warning">
+                <i class="bi bi-hourglass-split"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Pending Leaves</div>
+                <div class="kpi-value">{{ pending_leaves }}</div>
+                <small class="text-warning"><i class="bi bi-exclamation-circle me-1"></i>Awaiting Decision</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. Approved Leaves This Month -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-success-subtle text-success">
+                <i class="bi bi-calendar-check-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Leaves Approved</div>
+                <div class="kpi-value">{{ approved_leaves_month }}</div>
+                <small class="text-muted">Current Month</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. Monthly Payroll -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap" style="background-color: #f3e8ff; color: #7e22ce;">
+                <i class="bi bi-cash-coin"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Monthly Payroll</div>
+                <div class="kpi-value">${{ "{:,.0f}".format(monthly_payroll_amount) }}</div>
+                <small class="text-muted">Latest Batch Run</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. Absent Employees -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-danger-subtle text-danger">
+                <i class="bi bi-person-x-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Absent Today</div>
+                <div class="kpi-value">{{ att_absent }}</div>
+                <small class="text-danger">Unaccounted absence</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="row g-4 mb-4">
+    <!-- Department Distribution Bar Chart -->
+    <div class="col-lg-7">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-diagram-3-fill me-2 text-success"></i>Department-Wise Workforce Distribution</h6>
+                <a href="{{ url_for('employees.index') }}" class="btn btn-sm btn-link p-0 text-decoration-none">Workforce Directory</a>
+            </div>
+            <div class="card-body p-4">
+                <div style="height: 250px;">
+                    <canvas id="hrDeptChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today Attendance Breakdown -->
+    <div class="col-lg-5">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-pie-chart-fill me-2 text-primary"></i>Today's Attendance Status</h6>
+                <a href="{{ url_for('attendance.index') }}" class="btn btn-sm btn-link p-0 text-decoration-none">View All</a>
+            </div>
+            <div class="card-body p-4">
+                <div style="height: 200px;">
+                    <canvas id="hrAttendanceChart"></canvas>
+                </div>
+                <div class="d-flex justify-content-around mt-3 small text-center">
+                    <div>
+                        <div class="fw-bold text-success fs-6">{{ att_present }}</div>
+                        <span class="text-muted">Present</span>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-warning fs-6">{{ att_late }}</div>
+                        <span class="text-muted">Late</span>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-danger fs-6">{{ att_absent }}</div>
+                        <span class="text-muted">Absent</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Row: Pending Leave Approvals & Recent Joiners -->
+<div class="row g-4">
+    <!-- Pending Leave Requests Requiring HR Review -->
+    <div class="col-lg-7">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-calendar2-check-fill me-2 text-warning"></i>Pending Leave Applications</h6>
+                <a href="{{ url_for('leaves.index', status='Pending') }}" class="btn btn-sm btn-outline-success py-0">Review All</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-enterprise align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Department</th>
+                            <th>Leave Type</th>
+                            <th>Duration</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if pending_leave_applications %}
+                            {% for lr in pending_leave_applications %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ lr.employee.full_name }}</div>
+                                    <small class="text-muted">{{ lr.employee.emp_code }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ lr.employee.department.name if lr.employee.department else 'N/A' }}</span>
+                                </td>
+                                <td>{{ lr.leave_type.name }}</td>
+                                <td>
+                                    <span class="fw-bold">{{ lr.total_days }} day(s)</span><br>
+                                    <small class="text-muted">{{ lr.start_date.strftime('%b %d') }} - {{ lr.end_date.strftime('%b %d') }}</small>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('leaves.index') }}" class="btn btn-xs btn-success">Take Action</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    <i class="bi bi-check-circle-fill text-success fs-3 d-block mb-1"></i>
+                                    All leave applications have been processed.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Employee Joiners -->
+    <div class="col-lg-5">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-person-check-fill me-2 text-primary"></i>Recent Joiners</h6>
+                <a href="{{ url_for('employees.index') }}" class="btn btn-sm btn-outline-primary py-0">All Staff</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-enterprise align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Staff Member</th>
+                            <th>Department</th>
+                            <th>Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if recent_joiners %}
+                            {% for emp in recent_joiners %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ emp.full_name }}</div>
+                                    <small class="text-muted">{{ emp.emp_code }}</small>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ emp.department.name if emp.department else 'General' }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ emp.date_of_joining.strftime('%b %d, %Y') }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center py-4 text-muted">No recent employee records.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. HR Department Staff Bar Chart
+    const deptCtx = document.getElementById('hrDeptChart');
+    if (deptCtx) {
+        new Chart(deptCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ dept_labels | tojson }},
+                datasets: [{
+                    label: 'Employees',
+                    data: {{ dept_counts | tojson }},
+                    backgroundColor: '#10b981',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+    }
+
+    // 2. HR Attendance Doughnut
+    const attCtx = document.getElementById('hrAttendanceChart');
+    if (attCtx) {
+        new Chart(attCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Present', 'Late', 'Absent'],
+                datasets: [{
+                    data: [{{ att_present }}, {{ att_late }}, {{ att_absent }}],
+                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } },
+                cutout: '70%'
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+

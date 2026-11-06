@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Upload Document{% endblock %}
+{% block page_title %}Archive Document to Repository{% endblock %}
+
+{% block content %}
+<div class="card-enterprise mx-auto" style="max-width: 650px;">
+    <div class="card-header-enterprise">
+        <h6 class="card-title-enterprise"><i class="bi bi-cloud-arrow-up-fill me-2 text-primary"></i>Document Archival</h6>
+        <a href="{{ url_for('documents.index') }}" class="btn btn-sm btn-outline-secondary">Cancel</a>
+    </div>
+    <div class="p-4">
+        <form method="POST" action="{{ url_for('documents.upload') }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="mb-3">
+                <label class="form-label">Document Title *</label>
+                <input type="text" name="title" class="form-control" placeholder="e.g. Employee Code of Conduct 2026" required>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Document Category *</label>
+                    <select name="category_id" class="form-select" required>
+                        {% for cat in categories %}
+                            <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Target Department</label>
+                    <select name="department_id" class="form-select">
+                        <option value="0">All / Company-Wide</option>
+                        {% for d in departments %}
+                            <option value="{{ d.id }}">{{ d.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Document File (PDF, DOCX, XLSX)</label>
+                <input type="file" name="file" class="form-control">
+                <small class="text-muted" style="font-size: 0.75rem;">Leave empty to archive placeholder/policy metadata.</small>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Summary / Description</label>
+                <textarea name="description" class="form-control" rows="3" placeholder="Overview of document purpose and version guidelines..."></textarea>
+            </div>
+
+            <div class="mb-4">
+                <div class="form-check">
+                    <input type="checkbox" name="is_confidential" class="form-check-input" id="confCheck">
+                    <label class="form-check-label small fw-semibold" for="confCheck">Mark as Confidential (Restricted Circulation)</label>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ url_for('documents.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-enterprise-primary">
+                    <i class="bi bi-upload me-1"></i> Archive Document
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,308 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Executive Operations Dashboard{% endblock %}
+
+{% block content %}
+<!-- KPI Metrics Row (8 Mandatory Cards) -->
+<div class="row g-3 mb-4">
+    <!-- 1. Total Employees -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-primary-subtle text-primary">
+                <i class="bi bi-people-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Total Employees</div>
+                <div class="kpi-value">{{ total_employees }}</div>
+                <small class="text-success"><i class="bi bi-check-circle me-1"></i>{{ active_employees }} Active</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Departments -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-info-subtle text-info">
+                <i class="bi bi-diagram-3-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Departments</div>
+                <div class="kpi-value">{{ total_departments }}</div>
+                <small class="text-muted">Organizational Units</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Today's Attendance -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-success-subtle text-success">
+                <i class="bi bi-person-check-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Today's Attendance</div>
+                <div class="kpi-value">{{ today_attendance_count }}</div>
+                <small class="text-muted">{{ att_late }} Late &bull; {{ att_absent }} Absent</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Pending Leaves -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-warning-subtle text-warning">
+                <i class="bi bi-calendar-event-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Pending Leaves</div>
+                <div class="kpi-value">{{ pending_leaves }}</div>
+                <small class="text-warning"><i class="bi bi-clock-history me-1"></i>Awaiting Review</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Monthly Payroll -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-purple-subtle text-purple" style="background-color: #f3e8ff; color: #7e22ce;">
+                <i class="bi bi-cash-stack"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Monthly Payroll</div>
+                <div class="kpi-value">${{ "{:,.0f}".format(monthly_payroll_amount) }}</div>
+                <small class="text-muted">Net Disbursements</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. Active Projects -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-primary-subtle text-primary">
+                <i class="bi bi-kanban-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Active Projects</div>
+                <div class="kpi-value">{{ active_projects }}</div>
+                <small class="text-primary"><i class="bi bi-graph-up me-1"></i>In Progress</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. Pending Tasks -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-danger-subtle text-danger">
+                <i class="bi bi-list-check"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Pending Tasks</div>
+                <div class="kpi-value">{{ pending_tasks }}</div>
+                <small class="text-muted">Sprint Backlog</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. Database Tables -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-secondary-subtle text-secondary">
+                <i class="bi bi-database-fill-check"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Relational Tables</div>
+                <div class="kpi-value">68</div>
+                <small class="text-success"><i class="bi bi-shield-check me-1"></i>Fully Normalized</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Interactive Charts Row -->
+<div class="row g-4 mb-4">
+    <!-- Department Distribution Chart -->
+    <div class="col-lg-6">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise">
+                <h6 class="card-title-enterprise"><i class="bi bi-pie-chart-fill me-2 text-primary"></i>Department-wise Staff Allocation</h6>
+                <span class="badge bg-light text-dark border">Real DB Metrics</span>
+            </div>
+            <div class="p-4 d-flex align-items-center justify-content-center" style="min-height: 280px;">
+                <canvas id="deptChart" style="max-height: 260px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Today Status Chart -->
+    <div class="col-lg-6">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise">
+                <h6 class="card-title-enterprise"><i class="bi bi-bar-chart-fill me-2 text-success"></i>Daily Attendance Distribution</h6>
+                <span class="badge bg-light text-dark border">Today</span>
+            </div>
+            <div class="p-4 d-flex align-items-center justify-content-center" style="min-height: 280px;">
+                <canvas id="attChart" style="max-height: 260px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Operations Tables Row -->
+<div class="row g-4">
+    <!-- Pending Approvals -->
+    <div class="col-lg-6">
+        <div class="card-enterprise">
+            <div class="card-header-enterprise">
+                <h6 class="card-title-enterprise"><i class="bi bi-bell-fill me-2 text-warning"></i>Pending Leave Approvals</h6>
+                <a href="{{ url_for('leaves.index') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-enterprise">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Leave Type</th>
+                            <th>Dates</th>
+                            <th>Days</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in pending_approvals_list %}
+                        <tr>
+                            <td class="fw-semibold">{{ req.employee.full_name }}</td>
+                            <td><span class="badge badge-soft-info">{{ req.leave_type.name }}</span></td>
+                            <td>{{ req.start_date.strftime('%b %d') }} - {{ req.end_date.strftime('%b %d') }}</td>
+                            <td>{{ req.total_days|int }} days</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('leaves.take_action', req_id=req.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="action" value="Approved">
+                                    <button type="submit" class="btn btn-sm btn-success py-0 px-2" title="Approve"><i class="bi bi-check"></i></button>
+                                </form>
+                                <form method="POST" action="{{ url_for('leaves.take_action', req_id=req.id) }}" class="d-inline ms-1">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="action" value="Rejected">
+                                    <button type="submit" class="btn btn-sm btn-danger py-0 px-2" title="Reject"><i class="bi bi-x"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">No pending leave applications.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Audit Activity Stream -->
+    <div class="col-lg-6">
+        <div class="card-enterprise">
+            <div class="card-header-enterprise">
+                <h6 class="card-title-enterprise"><i class="bi bi-shield-check me-2 text-info"></i>Recent System Audit Activity</h6>
+                {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) %}
+                <a href="{{ url_for('system.audit_logs') }}" class="btn btn-sm btn-outline-secondary">Full Log</a>
+                {% endif %}
+            </div>
+            <div class="table-responsive">
+                <table class="table table-enterprise">
+                    <thead>
+                        <tr>
+                            <th>Actor</th>
+                            <th>Action</th>
+                            <th>Entity</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for act in recent_activities %}
+                        <tr>
+                            <td class="fw-semibold">{{ act.user.username if act.user else 'System' }}</td>
+                            <td>
+                                {% if act.action == 'CREATE' %}
+                                    <span class="badge badge-soft-success">CREATE</span>
+                                {% elif act.action == 'UPDATE' %}
+                                    <span class="badge badge-soft-info">UPDATE</span>
+                                {% elif act.action == 'DELETE' %}
+                                    <span class="badge badge-soft-danger">DELETE</span>
+                                {% elif act.action == 'RESTORE' %}
+                                    <span class="badge badge-soft-warning">RESTORE</span>
+                                {% else %}
+                                    <span class="badge badge-soft-primary">{{ act.action }}</span>
+                                {% endif %}
+                            </td>
+                            <td><code>{{ act.table_name }}#{{ act.record_id }}</code></td>
+                            <td class="text-muted small">{{ act.created_at.strftime('%H:%M:%S') }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">No recent activity.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Department Allocation Doughnut Chart
+    const deptCtx = document.getElementById('deptChart');
+    if (deptCtx) {
+        new Chart(deptCtx, {
+            type: 'doughnut',
+            data: {
+                labels: {{ dept_labels|tojson }},
+                datasets: [{
+                    data: {{ dept_counts|tojson }},
+                    backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#06b6d4', '#8b5cf6', '#ec4899'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
+
+    // 2. Attendance Status Bar Chart
+    const attCtx = document.getElementById('attChart');
+    if (attCtx) {
+        new Chart(attCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Present On-Time', 'Late Arrival', 'Absent'],
+                datasets: [{
+                    label: 'Employees',
+                    data: [{{ att_present }}, {{ att_late }}, {{ att_absent }}],
+                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,281 @@
+{% extends 'base.html' %}
+{% block title %}Employee Dashboard{% endblock %}
+{% block page_title %}Employee Self-Service Portal{% endblock %}
+
+{% block content %}
+<!-- Employee Welcome Banner & Bio Card -->
+<div class="card-enterprise p-4 mb-4 bg-gradient" style="background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%); color: white; border: none;">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-white text-teal d-flex align-items-center justify-content-center shadow-sm" style="width: 56px; height: 56px; font-size: 1.5rem; font-weight: 700; color: #0f766e;">
+                {{ emp.user.first_name[0] }}{{ emp.user.last_name[0] }}
+            </div>
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-light text-dark px-2 py-1"><i class="bi bi-person-fill me-1"></i>Employee Portal</span>
+                    <span class="text-white-50 small">&bull; ID: <strong>{{ emp.emp_code }}</strong></span>
+                </div>
+                <h4 class="fw-bold mb-0">Welcome back, {{ emp.user.first_name }}!</h4>
+                <div class="text-white-50 small mt-1">
+                    <span><i class="bi bi-briefcase me-1"></i>{{ emp.designation.title if emp.designation else 'Staff' }}</span> &bull; 
+                    <span><i class="bi bi-building me-1"></i>{{ emp.department.name if emp.department else 'General' }}</span> &bull; 
+                    <span><i class="bi bi-person-badge me-1"></i>Manager: {{ emp.manager.full_name if emp.manager else 'Executive Management' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Punch In/Out Shortcut -->
+        <div class="d-flex align-items-center gap-2">
+            <form action="{{ url_for('attendance.punch') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {% if today_attendance and today_attendance.clock_out %}
+                    <button type="button" class="btn btn-sm btn-light disabled">
+                        <i class="bi bi-check-circle-fill text-success me-1"></i> Completed For Today
+                    </button>
+                {% elif today_attendance and today_attendance.clock_in %}
+                    <button type="submit" class="btn btn-sm btn-warning fw-bold text-dark shadow-sm">
+                        <i class="bi bi-box-arrow-right me-1"></i> Clock Out
+                    </button>
+                {% else %}
+                    <button type="submit" class="btn btn-sm btn-light fw-bold text-teal shadow-sm" style="color: #0f766e;">
+                        <i class="bi bi-fingerprint me-1"></i> Clock In Now
+                    </button>
+                {% endif %}
+            </form>
+            <a href="{{ url_for('leaves.apply') }}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-calendar-plus me-1"></i> Apply Leave
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Employee KPI Metrics Row -->
+<div class="row g-3 mb-4">
+    <!-- 1. Today's Attendance -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap {% if today_attendance %}bg-success-subtle text-success{% else %}bg-warning-subtle text-warning{% endif %}">
+                <i class="bi bi-fingerprint"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Today's Status</div>
+                <div class="kpi-value fs-5">
+                    {% if today_attendance %}
+                        <span class="badge {% if today_attendance.attendance_status == 'Present' %}bg-success{% elif today_attendance.attendance_status == 'Late' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                            {{ today_attendance.attendance_status }}
+                        </span>
+                    {% else %}
+                        <span class="badge bg-secondary">Not Clocked In</span>
+                    {% endif %}
+                </div>
+                <small class="text-muted">
+                    {% if today_attendance and today_attendance.clock_in %}
+                        In: {{ today_attendance.clock_in.strftime('%H:%M') }}
+                        {% if today_attendance.clock_out %} &bull; Out: {{ today_attendance.clock_out.strftime('%H:%M') }}{% endif %}
+                    {% else %}
+                        Please punch in
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Monthly Attendance Summary -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-primary-subtle text-primary">
+                <i class="bi bi-calendar-check-fill"></i>
+            </div>
+            <div>
+                <div class="kpi-title">This Month</div>
+                <div class="kpi-value">{{ month_present }} <span class="fs-6 text-muted font-monospace">days</span></div>
+                <small class="text-muted">{{ month_late }} late arrivals</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Leave Balances -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-info-subtle text-info">
+                <i class="bi bi-calendar-range"></i>
+            </div>
+            <div>
+                <div class="kpi-title">Pending Leave Requests</div>
+                <div class="kpi-value">{{ pending_leaves | length }}</div>
+                <small class="text-muted">
+                    {% if leave_balances %}
+                        {{ leave_balances[0].remaining_days }}d {{ leave_balances[0].leave_type.name }} left
+                    {% else %}
+                        Available
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Assigned Tasks -->
+    <div class="col-xl-3 col-sm-6">
+        <div class="kpi-card">
+            <div class="kpi-icon-wrap bg-danger-subtle text-danger">
+                <i class="bi bi-check2-square"></i>
+            </div>
+            <div>
+                <div class="kpi-title">My Assigned Tasks</div>
+                <div class="kpi-value">{{ (my_pending_tasks | length) + (my_in_progress_tasks | length) }}</div>
+                <small class="text-success">{{ my_completed_tasks | length }} Completed</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Middle Section: My Assigned Tasks & Leave Balances -->
+<div class="row g-4 mb-4">
+    <!-- My Active Tasks -->
+    <div class="col-lg-7">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-list-task me-2 text-primary"></i>My Assigned Tasks & Deadlines</h6>
+                <a href="{{ url_for('tasks.index') }}" class="btn btn-sm btn-link p-0 text-decoration-none">View All</a>
+            </div>
+            <div class="p-3">
+                {% if my_tasks %}
+                    <div class="list-group list-group-flush">
+                        {% for task in my_tasks[:5] %}
+                        <div class="list-group-item px-0 py-3">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <div>
+                                    <h6 class="mb-1 fw-semibold">
+                                        <a href="{{ url_for('tasks.view', task_id=task.id) }}" class="text-dark text-decoration-none hover-primary">{{ task.title }}</a>
+                                    </h6>
+                                    <small class="text-muted">Project: <span class="fw-semibold text-dark">{{ task.project.name if task.project else 'General' }}</span></small>
+                                </div>
+                                <span class="badge {% if task.task_status == 'Completed' %}bg-success{% elif task.task_status == 'In-Progress' %}bg-primary{% elif task.task_status == 'Review' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                    {{ task.task_status }}
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center small text-muted mt-2">
+                                <span>Due: <span class="fw-semibold text-dark">{{ task.due_date.strftime('%b %d, %Y') }}</span></span>
+                                <span>Priority: <span class="badge bg-light text-dark border">{{ task.priority }}</span></span>
+                                <span>Progress: <span class="fw-semibold">{{ task.completion_percentage }}%</span></span>
+                            </div>
+                            <div class="progress mt-2" style="height: 5px;">
+                                <div class="progress-bar {% if task.task_status == 'Completed' %}bg-success{% else %}bg-primary{% endif %}" role="progressbar" style="width: {{ task.completion_percentage }}%;"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-clipboard-check fs-2 text-success d-block mb-2"></i>
+                        No active tasks currently assigned to you.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Leave Balances & Quick Apply -->
+    <div class="col-lg-5">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-calendar2-range-fill me-2 text-info"></i>Leave Entitlements & Balances</h6>
+                <a href="{{ url_for('leaves.apply') }}" class="btn btn-sm btn-outline-primary py-0">Apply</a>
+            </div>
+            <div class="p-3">
+                {% if leave_balances %}
+                    <div class="list-group list-group-flush mb-3">
+                        {% for b in leave_balances %}
+                        <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-semibold">{{ b.leave_type.name }}</div>
+                                <small class="text-muted">Allocated: {{ b.total_allocated }} days &bull; Used: {{ b.used_days }} days</small>
+                            </div>
+                            <span class="badge bg-success-subtle text-success fs-6 border border-success-subtle">
+                                {{ b.remaining_days }} days left
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-3 text-muted">Standard leave entitlement applies.</div>
+                {% endif %}
+
+                <!-- Latest Payslip Snapshot -->
+                {% if latest_payslip %}
+                <div class="border rounded p-3 bg-light mt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small fw-bold text-muted text-uppercase">Latest Payslip</span>
+                        <a href="{{ url_for('payroll.view_payslip', detail_id=latest_payslip.id) }}" class="btn btn-xs btn-outline-secondary">View Payslip</a>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="small text-muted">{{ latest_payslip.payroll.month }}/{{ latest_payslip.payroll.year }}</div>
+                            <div class="fw-bold text-success fs-5">${{ "{:,.2f}".format(latest_payslip.net_salary or 0) }}</div>
+                        </div>
+                        <span class="badge bg-success">Disbursed</span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Section: Company Announcements & Notifications -->
+<div class="row g-4">
+    <!-- Company Notices -->
+    <div class="col-lg-6">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-megaphone-fill me-2 text-warning"></i>Company Notices</h6>
+                <a href="{{ url_for('communication.announcements') }}" class="btn btn-sm btn-link p-0 text-decoration-none">View All</a>
+            </div>
+            <div class="p-3">
+                {% if announcements %}
+                    <div class="list-group list-group-flush">
+                        {% for a in announcements %}
+                        <div class="list-group-item px-0 py-2">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-semibold">{{ a.title }}</span>
+                                <small class="text-muted">{{ a.created_at.strftime('%b %d') }}</small>
+                            </div>
+                            <p class="text-muted small mb-0">{{ a.content[:120] }}{% if a.content|length > 120 %}...{% endif %}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-muted">No new announcements.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Notifications -->
+    <div class="col-lg-6">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-bell-fill me-2 text-primary"></i>My Notifications</h6>
+                <a href="{{ url_for('communication.notifications') }}" class="btn btn-sm btn-link p-0 text-decoration-none">All</a>
+            </div>
+            <div class="p-3">
+                {% if recent_notifications %}
+                    <div class="list-group list-group-flush">
+                        {% for n in recent_notifications %}
+                        <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fw-semibold small d-block">{{ n.title }}</span>
+                                <span class="text-muted" style="font-size: 0.8rem;">{{ n.message }}</span>
+                            </div>
+                            <small class="text-muted">{{ n.created_at.strftime('%H:%M') }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-muted">No unread notifications.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

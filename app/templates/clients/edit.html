@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Edit Client — {{ client.company_name }}{% endblock %}
+{% block page_title %}Edit Client Account{% endblock %}
+
+{% block content %}
+<div class="card-enterprise mx-auto" style="max-width: 700px;">
+    <div class="card-header-enterprise">
+        <h6 class="card-title-enterprise"><i class="bi bi-pencil-square me-2 text-primary"></i>Update Client Details</h6>
+        <a href="{{ url_for('clients.view', client_id=client.id) }}" class="btn btn-sm btn-outline-secondary">Cancel</a>
+    </div>
+    <div class="p-4">
+        <form method="POST" action="{{ url_for('clients.edit', client_id=client.id) }}">
+            {{ form.hidden_tag() }}
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-8">
+                    <label class="form-label">Company Name *</label>
+                    {{ form.company_name(class="form-control" + (" is-invalid" if form.company_name.errors else ""), placeholder="e.g. Apex Global Solutions LLC") }}
+                    {% for error in form.company_name.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Client Code *</label>
+                    {{ form.client_code(class="form-control" + (" is-invalid" if form.client_code.errors else ""), placeholder="e.g. CL-APEX") }}
+                    {% for error in form.client_code.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Industry Sector</label>
+                    {{ form.industry(class="form-control", placeholder="e.g. FinTech, Healthcare") }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Website URL</label>
+                    {{ form.website(class="form-control", placeholder="https://company.example.com") }}
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Corporate Email</label>
+                    {{ form.email(class="form-control", placeholder="contact@company.example.com") }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Phone Number</label>
+                    {{ form.phone(class="form-control", placeholder="+1-800-555-0199") }}
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-8">
+                    <label class="form-label">Headquarters Address</label>
+                    {{ form.address(class="form-control", rows="2") }}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Country</label>
+                    {{ form.country(class="form-control") }}
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ url_for('clients.view', client_id=client.id) }}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-enterprise-primary">
+                    <i class="bi bi-check2 me-1"></i> Update Client
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
