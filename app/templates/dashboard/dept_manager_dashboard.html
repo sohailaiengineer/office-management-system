@@ -25,62 +25,134 @@
     </div>
 </div>
 
-<!-- Department KPI Metrics Row -->
+<!-- Department KPI Metrics Row (Clickable & Filtered) -->
 <div class="row g-3 mb-4">
     <!-- 1. Total Team Members -->
     <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap bg-primary-subtle text-primary">
-                <i class="bi bi-people-fill"></i>
+        <a href="{{ url_for('employees.index') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-primary-subtle text-primary">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Department Staff</div>
+                    <div class="kpi-value">{{ dept_total_employees }}</div>
+                    <small class="text-success">{{ dept_active_employees }} Active Members</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">Department Staff</div>
-                <div class="kpi-value">{{ dept_total_employees }}</div>
-                <small class="text-success">{{ dept_active_employees }} Active Members</small>
-            </div>
-        </div>
+        </a>
     </div>
 
-    <!-- 2. Today's Department Attendance -->
+    <!-- 2. Today's Department Present -->
     <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap bg-success-subtle text-success">
-                <i class="bi bi-clock-fill"></i>
+        <a href="{{ url_for('attendance.index', status='Present') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-success-subtle text-success">
+                    <i class="bi bi-person-check-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Present Today</div>
+                    <div class="kpi-value text-success">{{ dept_present }}</div>
+                    <small class="text-muted">{{ dept_late }} Late &bull; Total Checked-in</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">Team Attendance</div>
-                <div class="kpi-value">{{ dept_attendance }} / {{ dept_active_employees }}</div>
-                <small class="text-muted">{{ dept_late }} Late &bull; {{ dept_absent }} Absent</small>
-            </div>
-        </div>
+        </a>
     </div>
 
-    <!-- 3. Department Projects -->
+    <!-- 3. Today's Department Absent -->
     <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap bg-info-subtle text-info">
-                <i class="bi bi-kanban-fill"></i>
+        <a href="{{ url_for('attendance.index', status='Absent') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-danger-subtle text-danger">
+                    <i class="bi bi-person-x-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Absent Today</div>
+                    <div class="kpi-value text-danger">{{ dept_absent }}</div>
+                    <small class="text-danger">Unaccounted Members</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">Department Projects</div>
-                <div class="kpi-value">{{ dept_projects | length }}</div>
-                <small class="text-info"><i class="bi bi-folder-check me-1"></i>Active Initiatives</small>
-            </div>
-        </div>
+        </a>
     </div>
 
-    <!-- 4. Pending & In-Progress Tasks -->
+    <!-- 4. Team Pending Leaves -->
     <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap bg-warning-subtle text-warning">
-                <i class="bi bi-check2-square"></i>
+        <a href="{{ url_for('leaves.index', status='Pending') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-warning-subtle text-warning">
+                    <i class="bi bi-calendar-event-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Pending Leaves</div>
+                    <div class="kpi-value text-warning">{{ dept_pending_leaves_count }}</div>
+                    <small class="text-warning">Needs Approval</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">Active Tasks</div>
-                <div class="kpi-value">{{ (dept_pending_tasks | length) + (dept_in_progress_tasks | length) }}</div>
-                <small class="text-success">{{ dept_completed_tasks | length }} Completed</small>
+        </a>
+    </div>
+
+    <!-- 5. Department Projects -->
+    <div class="col-xl-3 col-sm-6">
+        <a href="{{ url_for('projects.index') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-info-subtle text-info">
+                    <i class="bi bi-kanban-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Department Projects</div>
+                    <div class="kpi-value">{{ dept_projects | length }}</div>
+                    <small class="text-info"><i class="bi bi-folder-check me-1"></i>Active Initiatives</small>
+                </div>
             </div>
-        </div>
+        </a>
+    </div>
+
+    <!-- 6. Pending Tasks -->
+    <div class="col-xl-3 col-sm-6">
+        <a href="{{ url_for('tasks.index', status='Pending') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-warning-subtle text-warning">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Pending Tasks</div>
+                    <div class="kpi-value text-warning">{{ (dept_pending_tasks | length) + (dept_in_progress_tasks | length) }}</div>
+                    <small class="text-warning">Open Work Items</small>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- 7. Completed Tasks -->
+    <div class="col-xl-3 col-sm-6">
+        <a href="{{ url_for('tasks.index', status='Completed') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-success-subtle text-success">
+                    <i class="bi bi-check2-all"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Completed Tasks</div>
+                    <div class="kpi-value text-success">{{ dept_completed_tasks | length }}</div>
+                    <small class="text-success">Delivered Tasks</small>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- 8. Approved Leaves -->
+    <div class="col-xl-3 col-sm-6">
+        <a href="{{ url_for('leaves.index', status='Approved') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-secondary-subtle text-secondary">
+                    <i class="bi bi-calendar-check-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Approved Leaves</div>
+                    <div class="kpi-value text-secondary">{{ dept_approved_leaves_count }}</div>
+                    <small class="text-muted">History Records</small>
+                </div>
+            </div>
+        </a>
     </div>
 </div>
 

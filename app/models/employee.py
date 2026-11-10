@@ -16,6 +16,7 @@ class Department(db.Model, AuditSoftDeleteMixin):
     locations = db.relationship('DepartmentLocation', back_populates='department', cascade='all, delete-orphan')
     designations = db.relationship('Designation', back_populates='department')
     employees = db.relationship('Employee', back_populates='department', foreign_keys='Employee.department_id')
+    manager = db.relationship('Employee', foreign_keys=[manager_id])
     sub_departments = db.relationship('Department', backref=db.backref('parent_department', remote_side='Department.id'))
 
     def __repr__(self):

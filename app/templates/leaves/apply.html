@@ -9,28 +9,49 @@
         <a href="{{ url_for('leaves.index') }}" class="btn btn-sm btn-outline-secondary">Cancel</a>
     </div>
     <div class="p-4">
-        <form method="POST" action="{{ url_for('leaves.apply') }}">
+        <form method="POST" action="{{ url_for('leaves.apply') }}" enctype="multipart/form-data">
             {{ form.hidden_tag() }}
 
             <div class="mb-3">
-                <label class="form-label">Leave Category *</label>
+                <label class="form-label fw-semibold">Leave Category *</label>
                 {{ form.leave_type_id(class="form-select") }}
+                {% for err in form.leave_type_id.errors %}
+                    <div class="text-danger small mt-1">{{ err }}</div>
+                {% endfor %}
             </div>
 
             <div class="row g-3 mb-3">
                 <div class="col-md-6">
-                    <label class="form-label">Start Date *</label>
+                    <label class="form-label fw-semibold">Start Date *</label>
                     {{ form.start_date(class="form-control", type="date") }}
+                    {% for err in form.start_date.errors %}
+                        <div class="text-danger small mt-1">{{ err }}</div>
+                    {% endfor %}
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">End Date *</label>
+                    <label class="form-label fw-semibold">End Date *</label>
                     {{ form.end_date(class="form-control", type="date") }}
+                    {% for err in form.end_date.errors %}
+                        <div class="text-danger small mt-1">{{ err }}</div>
+                    {% endfor %}
                 </div>
             </div>
 
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Reason / Justification *</label>
+                {{ form.reason(class="form-control", rows="4", placeholder="Explain the context and dates requested (min 10 characters)...") }}
+                {% for err in form.reason.errors %}
+                    <div class="text-danger small mt-1">{{ err }}</div>
+                {% endfor %}
+            </div>
+
             <div class="mb-4">
-                <label class="form-label">Reason / Justification *</label>
-                {{ form.reason(class="form-control", rows="4", placeholder="Explain the context and dates requested...") }}
+                <label class="form-label fw-semibold">Supporting Document (Optional)</label>
+                {{ form.supporting_document(class="form-control") }}
+                <div class="form-text small text-muted">Upload medical note, travel slip, or certificate (PDF, Word, or image up to 16MB).</div>
+                {% for err in form.supporting_document.errors %}
+                    <div class="text-danger small mt-1">{{ err }}</div>
+                {% endfor %}
             </div>
 
             <div class="d-flex justify-content-end gap-2">

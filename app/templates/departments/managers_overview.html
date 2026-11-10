@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% block title %}Department Managers & Teams Overview{% endblock %}
+{% block page_title %}Department Managers & Teams Roster{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h5 class="fw-bold mb-1"><i class="bi bi-diagram-3-fill text-primary me-2"></i>Department Managers &amp; Teams Overview</h5>
+        <p class="text-muted small mb-0">Directorial visibility across departments, assigned managers, active teams, and project commitments.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('departments.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> All Departments
+        </a>
+        {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) %}
+        <a href="{{ url_for('departments.create') }}" class="btn btn-enterprise-primary btn-sm">
+            <i class="bi bi-plus-circle me-1"></i> Add Department
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    {% for item in dept_data %}
+    <div class="col-lg-6 col-xl-6">
+        <div class="card-enterprise h-100 shadow-sm border-0">
+            <div class="card-header-enterprise bg-light d-flex justify-content-between align-items-center py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary text-white fw-bold px-2 py-1">{{ item.dept.code }}</span>
+                    <h5 class="fw-bold mb-0 text-dark">{{ item.dept.name }}</h5>
+                </div>
+                {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) %}
+                <a href="{{ url_for('departments.edit', dept_id=item.dept.id) }}" class="btn btn-sm btn-outline-primary" title="Assign / Change Manager">
+                    <i class="bi bi-person-gear me-1"></i> Edit / Assign
+                </a>
+                {% endif %}
+            </div>
+            <div class="p-4">
+                <!-- Manager Info Card -->
+                <div class="p-3 rounded mb-3 bg-light-subtle border d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 48px; height: 48px; font-size: 1.2rem;">
+                            {% if item.manager and item.manager.user %}
+                                {{ item.manager.user.first_name[0] }}{{ item.manager.user.last_name[0] }}
+                            {% else %}
+                                ?
+                            {% endif %}
+                        </div>
+                        <div>
+                            <div class="small text-uppercase text-muted fw-semibold" style="letter-spacing: 0.5px; font-size: 0.72rem;">Department Lead / Manager</div>
+                            <h6 class="fw-bold mb-0 text-dark">
+                                {% if item.manager and item.manager.user %}
+                                    {{ item.manager.user.full_name }}
+                                {% else %}
+                                    <span class="text-danger fst-italic">No Manager Assigned</span>
+                                {% endif %}
+                            </h6>
+                            <div class="text-muted small">
+                                {% if item.manager and item.manager.user %}
+                                    <i class="bi bi-envelope me-1"></i>{{ item.manager.user.email }} &bull; <i class="bi bi-telephone me-1"></i>{{ item.manager.user.phone or 'N/A' }}
+                                {% else %}
+                                    Assign a manager to supervise this unit
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% if item.manager %}
+                    <a href="{{ url_for('departments.manager_detail', manager_emp_id=item.manager.id) }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-eye me-1"></i> View Team Dossier
+                    </a>
+                    {% endif %}
+                </div>
+
+                <!-- Stats Bar -->
+                <div class="row g-2 text-center mb-3">
+                    <div class="col-4">
+                        <div class="p-2 border rounded bg-white">
+                            <span class="text-muted small d-block">Team Members</span>
+                            <span class="fs-5 fw-bold text-dark">{{ item.members_count }}</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-2 border rounded bg-white">
+                            <span class="text-muted small d-block">Active Projects</span>
+                            <span class="fs-5 fw-bold text-primary">{{ item.projects_count }}</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-2 border rounded bg-white">
+                            <span class="text-muted small d-block">Pending Tasks</span>
+                            <span class="fs-5 fw-bold text-warning">{{ item.pending_tasks_count }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Team Members Preview -->
+                <div>
+                    <h6 class="fw-bold small text-muted text-uppercase mb-2">Team Roster ({{ item.members|length }})</h6>
+                    {% if item.members %}
+                    <div class="list-group list-group-flush border-top border-bottom" style="max-height: 160px; overflow-y: auto;">
+                        {% for emp in item.members %}
+                        <div class="list-group-item px-1 py-2 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-secondary-subtle text-dark">{{ emp.emp_code }}</span>
+                                <span class="fw-medium text-dark">{{ emp.user.full_name }}</span>
+                                {% if emp.id == item.dept.manager_id %}
+                                <span class="badge bg-success-subtle text-success small">Lead</span>
+                                {% endif %}
+                            </div>
+                            <span class="text-muted small">{{ emp.designation.title if emp.designation else 'Staff' }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted small fst-italic mb-0">No employees currently assigned to this department.</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-footer bg-light border-top d-flex justify-content-between align-items-center py-2 px-4 small">
+                <span class="text-muted">Budget: <strong class="text-success">${{ "{:,.0f}".format(item.dept.budget) }}</strong></span>
+                {% if item.manager %}
+                <a href="{{ url_for('departments.manager_detail', manager_emp_id=item.manager.id) }}" class="text-primary fw-semibold text-decoration-none">
+                    Explore Details <i class="bi bi-arrow-right"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+

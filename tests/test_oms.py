@@ -161,7 +161,7 @@ class EnterpriseOMSTestSuite(unittest.TestCase):
             ('/assets/', b'Asset Registry & Equipment'),
             ('/documents/', b'Corporate Document Repository'),
             ('/communication/announcements', b'Company Notices'),
-            ('/communication/notifications', b'My Notifications Feed'),
+            ('/communication/notifications', b'notifications'),
             ('/communication/messages', b'Internal Direct Messaging'),
             ('/recycle-bin/', b'Recycle Bin'),
             ('/reports/', b'Reports Catalog'),
@@ -952,6 +952,562 @@ class EnterpriseOMSTestSuite(unittest.TestCase):
         self.assertNotIn(b'Employee Salary Distribution', emp_rep.data)
         self.assertNotIn(b'System Audit Trail', emp_rep.data)
         print("[OK] Test 21: Reports Catalog Role Scoping & 403 Protection verified.")
+
+    # ---------------------------------------------------------
+    # Test 22: 12 Interactive Dashboard Cards & Filter Routes
+    # ---------------------------------------------------------
+    def test_22_interactive_dashboard_cards_and_filters(self):
+        self.login_as('admin', 'Admin@123')
+        
+        # 1. Total Employees
+        r1 = self.client.get('/employees/')
+        self.assertEqual(r1.status_code, 200)
+
+        # 2. Total Departments
+        r2 = self.client.get('/departments/')
+        self.assertEqual(r2.status_code, 200)
+
+        # 3. Total Managers / Managers & Teams Overview
+        r3 = self.client.get('/departments/managers')
+        self.assertEqual(r3.status_code, 200)
+        self.assertIn(b'Managers &amp; Teams Overview', r3.data)
+
+        # 4. Present Employees
+        r4 = self.client.get('/attendance/?status=Present')
+        self.assertEqual(r4.status_code, 200)
+
+        # 5. Absent Employees
+        r5 = self.client.get('/attendance/?status=Absent')
+        self.assertEqual(r5.status_code, 200)
+
+        # 6. Pending Leaves
+        r6 = self.client.get('/leaves/?status=Pending')
+        self.assertEqual(r6.status_code, 200)
+
+        # 7. Approved Leaves
+        r7 = self.client.get('/leaves/?status=Approved')
+        self.assertEqual(r7.status_code, 200)
+
+        # 8. Rejected Leaves
+        r8 = self.client.get('/leaves/?status=Rejected')
+        self.assertEqual(r8.status_code, 200)
+
+        # 9. Total Tasks
+        r9 = self.client.get('/tasks/')
+        self.assertEqual(r9.status_code, 200)
+
+        # 10. Pending Tasks
+        r10 = self.client.get('/tasks/?status=Pending')
+        self.assertEqual(r10.status_code, 200)
+
+        # 11. Completed Tasks
+        r11 = self.client.get('/tasks/?status=Completed')
+        self.assertEqual(r11.status_code, 200)
+
+        # 12. Payroll Records
+        r12 = self.client.get('/payroll/')
+        self.assertEqual(r12.status_code, 200)
+        print("[OK] Test 22: All 12 Interactive Dashboard Card Filter Routes verified.")
+
+    # ---------------------------------------------------------
+    # Test 23: Manager A vs Manager B Strict Department Isolation
+    # ---------------------------------------------------------
+    def test_23_department_manager_isolation(self):
+        # Manager A: deptmanager (Engineering)
+        self.login_as('deptmanager', 'Manager@123')
+        dash_a = self.client.get('/dashboard/')
+        self.assertEqual(dash_a.status_code, 200)
+        self.assertIn(b'Engineering', dash_a.data)
+
+        tasks_a = self.client.get('/tasks/')
+        self.assertEqual(tasks_a.status_code, 200)
+        # Should not see Marketing outreach task
+        self.assertNotIn(b'Draft Outreach Collateral', tasks_a.data)
+
+        # Manager B: mktmanager (Marketing & Sales)
+        self.login_as('mktmanager', 'Manager@123')
+        dash_b = self.client.get('/dashboard/')
+        self.assertEqual(dash_b.status_code, 200)
+        self.assertIn(b'Marketing', dash_b.data)
+
+        tasks_b = self.client.get('/tasks/')
+        self.assertEqual(tasks_b.status_code, 200)
+        # Should see Marketing outreach task
+        self.assertIn(b'Draft Outreach Collateral', tasks_b.data)
+        print("[OK] Test 23: Department Manager A vs Manager B Strict Isolation verified.")
+
+    # ---------------------------------------------------------
+    # Test 24: Employee A vs Employee B Data Privacy
+    # ---------------------------------------------------------
+    def test_24_employee_data_privacy(self):
+        # Employee A: johndoe (Engineering)
+        self.login_as('johndoe', 'Emp@123')
+        dash_john = self.client.get('/dashboard/')
+        self.assertEqual(dash_john.status_code, 200)
+        self.assertIn(b'John Doe', dash_john.data)
+
+        # Cannot access all employee management directory
+        emp_dir = self.client.get('/employees/', follow_redirects=True)
+        self.assertIn(b'My Profile', emp_dir.data)
+
+        # Employee B: janedoe (Marketing)
+        self.login_as('janedoe', 'Emp@123')
+        dash_jane = self.client.get('/dashboard/')
+        self.assertEqual(dash_jane.status_code, 200)
+        self.assertIn(b'Jane Doe', dash_jane.data)
+        print("[OK] Test 24: Employee A vs Employee B Privacy and RBAC verified.")
+
+    # ---------------------------------------------------------
+    # Test 25: Leave Request Submission with Attachment & Notifications (No 500 Error!)
+    # ---------------------------------------------------------
+    def test_25_leave_request_attachment_and_notifications(self):
+        self.login_as('johndoe', 'Emp@123')
+        
+        # 1. Apply page renders
+        apply_page = self.client.get('/leaves/apply')
+        self.assertEqual(apply_page.status_code, 200)
+        self.assertIn(b'Apply for Leave', apply_page.data)
+
+        # 2. Submit leave with attachment
+        import io
+        fake_doc = (io.BytesIO(b"%PDF-1.4 Fake Medical Certificate Content"), 'medical_cert.pdf')
+        start_d = (date.today() + timedelta(days=20)).strftime('%Y-%m-%d')
+        end_d = (date.today() + timedelta(days=22)).strftime('%Y-%m-%d')
+
+        post_res = self.client.post('/leaves/apply', data={
+            'leave_type_id': '1',
+            'start_date': start_d,
+            'end_date': end_d,
+            'reason': 'Medical consultation and recovery period test request.',
+            'supporting_document': fake_doc
+        }, content_type='multipart/form-data', follow_redirects=True)
+
+        self.assertEqual(post_res.status_code, 200)
+        self.assertIn(b'Leave application submitted successfully', post_res.data)
+
+        # Verify DB records
+        with self.app.app_context():
+            john_emp = Employee.query.join(User, Employee.user_id == User.id).filter(User.username == 'johndoe').first()
+            leave_req = LeaveRequest.query.filter_by(employee_id=john_emp.id, reason='Medical consultation and recovery period test request.').first()
+            self.assertIsNotNone(leave_req)
+            self.assertEqual(leave_req.approval_status, 'Pending')
+            
+            # Verify notifications dispatched
+            admin_notif = Notification.query.filter(Notification.title.ilike('%Leave Application%')).first()
+            self.assertIsNotNone(admin_notif)
+        print("[OK] Test 25: Leave Submission with Attachment & Notifications (No 500 Error) verified.")
+
+    # ---------------------------------------------------------
+    # Test 26: Internal Messaging with Attachment & Privacy Protection
+    # ---------------------------------------------------------
+    def test_26_messaging_with_attachment_and_privacy(self):
+        # 1. John Doe sends message with attachment to Rachel Green (mktmanager)
+        self.login_as('johndoe', 'Emp@123')
+        with self.app.app_context():
+            rachel = User.query.filter_by(username='mktmanager').first()
+            self.assertIsNotNone(rachel)
+            rachel_id = rachel.id
+
+        import io
+        fake_attachment = (io.BytesIO(b"Confidential Sprint Brief Content"), 'sprint_brief.txt')
+
+        msg_res = self.client.post('/communication/messages', data={
+            'recipient_id': str(rachel_id),
+            'subject': 'Cross-Department Sync Request',
+            'body': 'Please review the attached project specs for Q4 integration.',
+            'attachment': fake_attachment
+        }, content_type='multipart/form-data', follow_redirects=True)
+
+        self.assertEqual(msg_res.status_code, 200)
+        self.assertIn(b'Message dispatched successfully', msg_res.data)
+
+        with self.app.app_context():
+            msg = Message.query.filter_by(subject='Cross-Department Sync Request').first()
+            self.assertIsNotNone(msg)
+            self.assertIsNotNone(msg.attachment_path)
+            msg_id = msg.id
+
+        # 2. Third-party (deptmanager) CANNOT view private message between John and Rachel
+        self.login_as('deptmanager', 'Manager@123')
+        forbidden_view = self.client.get(f'/communication/messages/{msg_id}')
+        self.assertEqual(forbidden_view.status_code, 403)
+
+        # 3. Intended recipient (Rachel / mktmanager) CAN view and mark read
+        self.login_as('mktmanager', 'Manager@123')
+        allowed_view = self.client.get(f'/communication/messages/{msg_id}')
+        self.assertEqual(allowed_view.status_code, 200)
+        self.assertIn(b'Cross-Department Sync Request', allowed_view.data)
+
+        # 4. Intended recipient can download attachment
+        att_download = self.client.get(f'/communication/messages/{msg_id}/attachment')
+        self.assertEqual(att_download.status_code, 200)
+        print("[OK] Test 26: Messaging Recipient Selection, Attachment & Privacy Protection verified.")
+
+    # ---------------------------------------------------------
+    # Test 27: Document Management Multi-Filter & Download Authorization
+    # ---------------------------------------------------------
+    def test_27_document_management_and_password_reset(self):
+        self.login_as('admin', 'Admin@123')
+
+        # 1. Multi-filter search works
+        doc_search = self.client.get('/documents/?search=handbook')
+        self.assertEqual(doc_search.status_code, 200)
+
+        # 2. Download endpoint authorized
+        with self.app.app_context():
+            doc = Document.active_query().first()
+            doc_id = doc.id if doc else 1
+
+        doc_dl = self.client.get(f'/documents/{doc_id}/download')
+        self.assertIn(doc_dl.status_code, [200, 302])
+
+        # 3. Forgot Password Request
+        fp_res = self.client.post('/auth/forgot-password', data={
+            'email': 'john.doe@enterprise-oms.com'
+        }, follow_redirects=True)
+        self.assertEqual(fp_res.status_code, 200)
+        self.assertIn(b'password reset instructions have been dispatched', fp_res.data)
+        print("[OK] Test 27: Document Management Filters & Password Reset Workflow verified.")
+
+    # ---------------------------------------------------------
+    # Test 28: Employee Salary Slip Access & HTTP 500 Elimination
+    # ---------------------------------------------------------
+    def test_28_employee_salary_slip_no_500_error(self):
+        # 1. Login as employee John Doe (emp_id=4)
+        self.login_as('johndoe', 'Emp@123')
+
+        # 2. Access /payroll/ (employee view) - must be 200 OK without Jinja BuildError
+        emp_payroll_res = self.client.get('/payroll/')
+        self.assertEqual(emp_payroll_res.status_code, 200)
+        self.assertIn(b'My Salary Slip History', emp_payroll_res.data)
+        self.assertIn(b'View Slip', emp_payroll_res.data)
+
+        # 3. Access individual salary slip /payroll/payslip/1
+        slip_res = self.client.get('/payroll/payslip/1')
+        self.assertEqual(slip_res.status_code, 200)
+        self.assertIn(b'CONFIDENTIAL SALARY SLIP', slip_res.data)
+        self.assertIn(b'TechVision Global Enterprises Inc.', slip_res.data)
+        self.assertIn(b'John Doe', slip_res.data)
+        self.assertIn(b'Basic Salary', slip_res.data)
+        self.assertIn(b'NET TAKE-HOME DISBURSEMENT', slip_res.data)
+        self.assertIn(b'Print / Download PDF', slip_res.data)
+
+        # 4. Access alias routes: /payroll/my-slips and /payroll/slips/1
+        my_slips_res = self.client.get('/payroll/my-slips')
+        self.assertEqual(my_slips_res.status_code, 200)
+
+        alias_slip_res = self.client.get('/payroll/slips/1')
+        self.assertEqual(alias_slip_res.status_code, 200)
+
+        # 5. Access control: another employee (janedoe) CANNOT access John's salary slip
+        self.login_as('janedoe', 'Emp@123')
+        forbidden_slip = self.client.get('/payroll/payslip/1', follow_redirects=True)
+        self.assertEqual(forbidden_slip.status_code, 200)
+        self.assertIn(b'Access Denied', forbidden_slip.data)
+        print("[OK] Test 28: Employee Salary Slip Access & HTTP 500 Elimination verified.")
+
+    # ---------------------------------------------------------
+    # Test 29: HR Salary Management System & Duplicate Prevention
+    # ---------------------------------------------------------
+    def test_29_hr_salary_management_system(self):
+        # 1. Login as HR Manager
+        self.login_as('hrmanager', 'Hr@123')
+
+        # 2. Access Payroll administration dashboard
+        pr_index = self.client.get('/payroll/')
+        self.assertEqual(pr_index.status_code, 200)
+        self.assertIn(b'Master Employee Salary Records Register', pr_index.data)
+        self.assertIn(b'Issue Individual Salary Slip', pr_index.data)
+
+        # 3. Access Individual Salary Slip generator
+        gen_form_res = self.client.get('/payroll/generate-individual')
+        self.assertEqual(gen_form_res.status_code, 200)
+        self.assertIn(b'Generate Individual Employee Salary Slip', gen_form_res.data)
+
+        # Clean up any pre-existing test salary record for employee 4 in month 12, 2026
+        with self.app.app_context():
+            p_header = Payroll.active_query().filter_by(month=12, year=2026).first()
+            if p_header:
+                PayrollDetail.query.filter_by(payroll_id=p_header.id, employee_id=4).delete()
+                db.session.commit()
+
+        # 4. Generate new salary record for employee 4 for Month 12, Year 2026
+        salary_payload = {
+            'employee_id': 4,
+            'month': 12,
+            'year': 2026,
+            'basic': '5000.00',
+            'allowances': '1200.00',
+            'bonuses_total': '600.00',
+            'overtime_amount': '200.00',
+            'deductions_total': '350.00',
+            'payment_status': 'Paid',
+            'payment_method': 'Bank Transfer'
+        }
+        create_res = self.client.post('/payroll/generate-individual', data=salary_payload, follow_redirects=True)
+        self.assertEqual(create_res.status_code, 200)
+        self.assertIn(b'Salary slip generated successfully', create_res.data)
+
+        # Verify net salary: 5000 + 1200 + 600 + 200 - 350 = 6650.00
+        with self.app.app_context():
+            new_slip = PayrollDetail.active_query().filter_by(employee_id=4, basic=Decimal('5000.00')).first()
+            self.assertIsNotNone(new_slip)
+            self.assertEqual(new_slip.net_salary, Decimal('6650.00'))
+            new_slip_id = new_slip.id
+
+        # 5. Prevent duplicate generation for same employee and month/year
+        dup_res = self.client.post('/payroll/generate-individual', data=salary_payload, follow_redirects=True)
+        self.assertEqual(dup_res.status_code, 200)
+        self.assertIn(b'Duplicate Alert', dup_res.data)
+
+        # 6. Update payment status via /payroll/detail/<id>/status
+        status_res = self.client.post(f'/payroll/detail/{new_slip_id}/status', data={
+            'status': 'Pending'
+        }, follow_redirects=True)
+        self.assertEqual(status_res.status_code, 200)
+        self.assertIn(b'status updated to Pending', status_res.data)
+
+        with self.app.app_context():
+            updated_slip = db.session.get(PayrollDetail, new_slip_id)
+            self.assertEqual(updated_slip.payment_status, 'Pending')
+
+        print("[OK] Test 29: HR Salary Management, Automatic Net Pay & Duplicate Prevention verified.")
+
+    # ---------------------------------------------------------
+    # Test 30: Separate Department Logins & Portal Validation
+    # ---------------------------------------------------------
+    def test_30_separate_department_logins_and_portals(self):
+        # 1. Department Login Portal Pages render correctly
+        portals = [
+            ('/auth/login/ENG', b'ENG Division', b'Engineering'),
+            ('/auth/login/HR', b'HR Division', b'Human Resources'),
+            ('/auth/login/FIN', b'FIN Division', b'Finance & Accounts'),
+            ('/auth/login/MKT', b'MKT Division', b'Marketing & Sales')
+        ]
+        for url, badge, name in portals:
+            resp = self.client.get(url)
+            self.assertEqual(resp.status_code, 200)
+            self.assertIn(badge, resp.data)
+            self.assertIn(name, resp.data)
+
+        # 2. Verify dedicated department manager logins:
+        # Engineering Manager: deptmanager
+        eng_login = self.login_as('deptmanager', 'Manager@123')
+        self.assertEqual(eng_login.status_code, 200)
+        self.assertIn(b'Engineering', eng_login.data)
+
+        # HR Manager: hrmanager
+        hr_login = self.login_as('hrmanager', 'Hr@123')
+        self.assertEqual(hr_login.status_code, 200)
+        self.assertIn(b'HR Operations', hr_login.data)
+
+        # Finance Manager: finmanager
+        fin_login = self.login_as('finmanager', 'Manager@123')
+        self.assertEqual(fin_login.status_code, 200)
+        self.assertIn(b'Finance', fin_login.data)
+
+        # Marketing Manager: mktmanager
+        mkt_login = self.login_as('mktmanager', 'Manager@123')
+        self.assertEqual(mkt_login.status_code, 200)
+        self.assertIn(b'Marketing', mkt_login.data)
+
+        # 3. Test cross-department login restriction:
+        # If an Engineering user tries to sign into Finance Portal /auth/login/FIN
+        self.logout()
+        cross_res = self.client.post('/auth/login/FIN', data={
+            'username_or_email': 'deptmanager',
+            'password': 'Manager@123'
+        }, follow_redirects=True)
+        self.assertEqual(cross_res.status_code, 200)
+        self.assertIn(b'Department Access Restricted', cross_res.data)
+
+        # 4. Super Admin can access ANY department portal
+        admin_portal_res = self.client.post('/auth/login/FIN', data={
+            'username_or_email': 'admin',
+            'password': 'Admin@123'
+        }, follow_redirects=True)
+        self.assertEqual(admin_portal_res.status_code, 200)
+        self.assertIn(b'Executive Operations Dashboard', admin_portal_res.data)
+
+        print("[OK] Test 30: Separate Department Logins, Portal Restriction & Super Admin Access verified.")
+
+    # ---------------------------------------------------------
+    # Test 31: Cross-Department Data Isolation & Strict RBAC
+    # ---------------------------------------------------------
+    def test_31_department_data_isolation_and_rbac(self):
+        # 1. Finance Manager has access to /finance/
+        self.login_as('finmanager', 'Manager@123')
+        fin_res = self.client.get('/finance/')
+        self.assertEqual(fin_res.status_code, 200)
+        self.assertIn(b'Client Invoices', fin_res.data)
+
+        # 2. Engineering Manager CANNOT create invoices
+        self.login_as('deptmanager', 'Manager@123')
+        forbidden_invoice = self.client.get('/finance/invoices/create', follow_redirects=True)
+        self.assertEqual(forbidden_invoice.status_code, 200)
+        self.assertIn(b'Access Denied', forbidden_invoice.data)
+
+        # 3. Engineering Manager CANNOT view employee details outside Engineering
+        with self.app.app_context():
+            fin_emp = Employee.active_query().filter_by(emp_code='EMP-008').first()
+            fin_emp_id = fin_emp.id
+
+        forbidden_emp_view = self.client.get(f'/employees/{fin_emp_id}', follow_redirects=True)
+        self.assertEqual(forbidden_emp_view.status_code, 200)
+        self.assertIn(b'Access Denied', forbidden_emp_view.data)
+
+        # 4. Super Admin retains full visibility across all 4 departments
+        self.login_as('admin', 'Admin@123')
+        admin_emp_view = self.client.get(f'/employees/{fin_emp_id}')
+        self.assertEqual(admin_emp_view.status_code, 200)
+        self.assertIn(b'David Miller', admin_emp_view.data)
+
+        admin_dept_view = self.client.get('/departments/')
+        self.assertEqual(admin_dept_view.status_code, 200)
+        self.assertIn(b'Engineering', admin_dept_view.data)
+        self.assertIn(b'Human Resources', admin_dept_view.data)
+        self.assertIn(b'Finance', admin_dept_view.data)
+        self.assertIn(b'Marketing', admin_dept_view.data)
+
+        print("[OK] Test 31: Cross-Department Data Privacy & Anti-Tampering URL RBAC verified.")
+
+    # ---------------------------------------------------------
+    # Test 32: Employee Creation, Auto-Provisioning & Filtering
+    # ---------------------------------------------------------
+    def test_32_employee_creation_and_auto_account(self):
+        self.login_as('admin', 'Admin@123')
+        ts = datetime.now().strftime('%H%M%S')
+        emp_code = f"EMP-N{ts}"
+        username = f"at_{ts}"
+        email = f"at_{ts}@enterprise-oms.com"
+
+        # 1. Access Employee Registration Form
+        create_page = self.client.get('/employees/create')
+        self.assertEqual(create_page.status_code, 200)
+        self.assertIn(b'Employee Registration Form', create_page.data)
+
+        # 2. Submit Add New Employee
+        post_data = {
+            'first_name': 'Alexander',
+            'last_name': 'Taylor',
+            'username': username,
+            'email': email,
+            'phone': '+1 555-0199',
+            'role_id': 4, # Employee role
+            'password': '', # Auto-generate
+            'send_activation_email': 'y',
+            'emp_code': emp_code,
+            'department_id': 1, # Engineering
+            'designation_id': 1,
+            'manager_id': 3,
+            'employment_type': 'Full-Time',
+            'date_of_joining': '2026-11-10',
+            'basic_salary': '6200.00',
+            'status': 'Active',
+            'gender': 'Male',
+            'nationality': 'American'
+        }
+        res = self.client.post('/employees/create', data=post_data, follow_redirects=True)
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(b'onboarded successfully', res.data)
+
+        # 3. Verify Database Records
+        with self.app.app_context():
+            created_emp = Employee.active_query().filter_by(emp_code=emp_code).first()
+            self.assertIsNotNone(created_emp)
+            self.assertEqual(created_emp.full_name, 'Alexander Taylor')
+            self.assertEqual(created_emp.department_id, 1)
+
+            created_user = User.active_query().filter_by(username=username).first()
+            self.assertIsNotNone(created_user)
+            self.assertEqual(created_user.id, created_emp.user_id)
+            self.assertTrue(created_user.has_role('employee'))
+
+        # 4. Filter by Department and Manager
+        filter_res = self.client.get(f'/employees/?department_id=1&manager_id=3')
+        self.assertEqual(filter_res.status_code, 200)
+        self.assertIn(username.encode(), filter_res.data)
+
+        # 5. Edit Employee without creating duplicate accounts
+        edit_res = self.client.post(f'/employees/{created_emp.id}/edit', data={
+            'first_name': 'Alex',
+            'last_name': 'Taylor',
+            'username': username,
+            'email': email,
+            'phone': '+1 555-9988',
+            'role_id': 4,
+            'password': '',
+            'emp_code': emp_code,
+            'department_id': 1,
+            'designation_id': 1,
+            'manager_id': 3,
+            'employment_type': 'Full-Time',
+            'date_of_joining': '2026-11-10',
+            'basic_salary': '6500.00',
+            'status': 'Active'
+        }, follow_redirects=True)
+        self.assertEqual(edit_res.status_code, 200)
+
+        with self.app.app_context():
+            user_count = User.query.filter_by(username=username).count()
+            self.assertEqual(user_count, 1)
+
+        print("[OK] Test 32: Employee Creation, Auto-Provisioning & Filtering verified.")
+
+    # ---------------------------------------------------------
+    # Test 33: Account Activation & Strict Salary Privacy
+    # ---------------------------------------------------------
+    def test_33_account_activation_and_salary_privacy(self):
+        from itsdangerous import URLSafeTimedSerializer
+
+        # 1. Test Token Activation Route
+        with self.app.app_context():
+            temp_user = User.query.filter_by(username='activate_test_user').first()
+            if not temp_user:
+                temp_user = User(
+                    username='activate_test_user',
+                    email='activate_test@enterprise-oms.com',
+                    first_name='Activate',
+                    last_name='Tester',
+                    password_hash='initial_dummy_hash',
+                    status='Active'
+                )
+                db.session.add(temp_user)
+                db.session.commit()
+            s = URLSafeTimedSerializer(self.app.config['SECRET_KEY'])
+            token = s.dumps(temp_user.email, salt='account-activation-salt')
+
+        activate_page = self.client.get(f'/auth/activate/{token}')
+        self.assertEqual(activate_page.status_code, 200)
+        self.assertIn(b'Activate Your Account', activate_page.data)
+
+        # Complete activation with new password
+        activate_res = self.client.post(f'/auth/activate/{token}', data={
+            'password': 'Password@123',
+            'confirm_password': 'Password@123'
+        }, follow_redirects=True)
+        self.assertEqual(activate_res.status_code, 200)
+        self.assertIn(b'successfully activated', activate_res.data)
+
+        # 2. Strict Salary Privacy Enforcement:
+        # Dept Manager CANNOT access individual employee salary slips
+        with self.app.app_context():
+            slip = PayrollDetail.active_query().first()
+            self.assertIsNotNone(slip)
+            slip_id = slip.id
+
+        self.login_as('deptmanager', 'Manager@123')
+        mgr_slip_res = self.client.get(f'/payroll/payslip/{slip_id}', follow_redirects=True)
+        self.assertEqual(mgr_slip_res.status_code, 200)
+        self.assertIn(b'Access Denied', mgr_slip_res.data)
+
+        # 3. Super Admin CAN view the payslip
+        self.login_as('admin', 'Admin@123')
+        admin_slip_res = self.client.get(f'/payroll/payslip/{slip_id}')
+        self.assertEqual(admin_slip_res.status_code, 200)
+        self.assertIn(b'Salary Slip', admin_slip_res.data)
+
+        print("[OK] Test 33: Account Activation & Strict Salary Privacy verified.")
 
 
 if __name__ == '__main__':

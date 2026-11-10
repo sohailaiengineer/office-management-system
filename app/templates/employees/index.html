@@ -7,12 +7,12 @@
     <div class="card-header-enterprise flex-wrap gap-3">
         <div>
             <h6 class="card-title-enterprise"><i class="bi bi-people-fill me-2 text-primary"></i>Workforce Directory</h6>
-            <small class="text-muted">Master roster of all active organizational staff</small>
+            <small class="text-muted">Master roster of all active organizational staff and managed accounts</small>
         </div>
         <div class="d-flex align-items-center gap-2">
             {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) %}
             <a href="{{ url_for('employees.create') }}" class="btn btn-enterprise-primary">
-                <i class="bi bi-person-plus-fill"></i> Add New Employee
+                <i class="bi bi-person-plus-fill me-1"></i> Add New Employee
             </a>
             {% endif %}
         </div>
@@ -21,7 +21,7 @@
     <!-- Filters & Search Toolbar -->
     <div class="p-3 bg-light border-bottom">
         <form method="GET" action="{{ url_for('employees.index') }}" class="row g-2 align-items-center">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="input-group input-group-sm">
                     <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
                     <input type="text" name="search" class="form-control" placeholder="Search by name, code or email..." value="{{ search }}">
@@ -36,13 +36,21 @@
                 </select>
             </div>
             <div class="col-md-2">
+                <select name="manager_id" class="form-select form-select-sm">
+                    <option value="">All Managers</option>
+                    {% for m in managers %}
+                        <option value="{{ m.id }}" {% if selected_manager|string == m.id|string %}selected{% endif %}>{{ m.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
                 <select name="status" class="form-select form-select-sm">
                     <option value="">All Statuses</option>
                     <option value="Active" {% if selected_status == 'Active' %}selected{% endif %}>Active</option>
                     <option value="Deactive" {% if selected_status == 'Deactive' %}selected{% endif %}>Deactive</option>
                 </select>
             </div>
-            <div class="col-md-3 d-flex gap-2">
+            <div class="col-md-2 d-flex gap-2">
                 <button type="submit" class="btn btn-sm btn-primary flex-grow-1"><i class="bi bi-funnel"></i> Filter</button>
                 <a href="{{ url_for('employees.index') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
             </div>
@@ -54,11 +62,11 @@
         <table class="table table-enterprise table-searchable">
             <thead>
                 <tr>
-                    <th>Emp Code</th>
+                    <th>Emp ID</th>
                     <th>Employee Name</th>
                     <th>Department</th>
                     <th>Designation</th>
-                    <th>Employment</th>
+                    <th>Reporting Manager</th>
                     <th>Joining Date</th>
                     <th>Status</th>
                     <th class="text-end">Actions</th>
@@ -83,7 +91,7 @@
                     </td>
                     <td>{{ emp.department.name if emp.department else '<span class="text-muted">Unassigned</span>'|safe }}</td>
                     <td>{{ emp.designation.title if emp.designation else '<span class="text-muted">General</span>'|safe }}</td>
-                    <td><span class="badge badge-soft-info">{{ emp.employment_type }}</span></td>
+                    <td>{{ emp.manager.full_name if emp.manager else '<span class="text-muted">—</span>'|safe }}</td>
                     <td>{{ emp.date_of_joining.strftime('%b %d, %Y') if emp.date_of_joining else 'N/A' }}</td>
                     <td>
                         {% if emp.status == 'Active' %}
@@ -101,12 +109,10 @@
                             <a href="{{ url_for('employees.edit', emp_id=emp.id) }}" class="btn btn-outline-secondary" title="Edit">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <form method="POST" action="{{ url_for('employees.delete', emp_id=emp.id) }}" class="d-inline confirm-delete-form" data-confirm-message="Soft-delete employee {{ emp.full_name }} and move to Recycle Bin?">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-outline-danger" title="Move to Trash">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </form>
+                            <button type="button" class="btn btn-outline-danger" title="Delete Employee" 
+                                onclick="openDeleteEmployeeModal('{{ emp.id }}', '{{ emp.full_name }}', '{{ emp.emp_code }}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
                             {% endif %}
                         </div>
                     </td>
@@ -130,13 +136,13 @@
         <ul class="pagination pagination-sm mb-0">
             {% if pagination.has_prev %}
             <li class="page-item">
-                <a class="page-link" href="{{ url_for('employees.index', page=pagination.prev_num, search=search, department_id=selected_dept, status=selected_status) }}">Previous</a>
+                <a class="page-link" href="{{ url_for('employees.index', page=pagination.prev_num, search=search, department_id=selected_dept, manager_id=selected_manager, status=selected_status) }}">Previous</a>
             </li>
             {% endif %}
             {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
                 {% if p %}
                     <li class="page-item {% if p == pagination.page %}active{% endif %}">
-                        <a class="page-link" href="{{ url_for('employees.index', page=p, search=search, department_id=selected_dept, status=selected_status) }}">{{ p }}</a>
+                        <a class="page-link" href="{{ url_for('employees.index', page=p, search=search, department_id=selected_dept, manager_id=selected_manager, status=selected_status) }}">{{ p }}</a>
                     </li>
                 {% else %}
                     <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
@@ -144,11 +150,52 @@
             {% endfor %}
             {% if pagination.has_next %}
             <li class="page-item">
-                <a class="page-link" href="{{ url_for('employees.index', page=pagination.next_num, search=search, department_id=selected_dept, status=selected_status) }}">Next</a>
+                <a class="page-link" href="{{ url_for('employees.index', page=pagination.next_num, search=search, department_id=selected_dept, manager_id=selected_manager, status=selected_status) }}">Next</a>
             </li>
             {% endif %}
         </ul>
     </div>
     {% endif %}
 </div>
+
+<!-- Modal: Delete Employee Confirmation -->
+<div class="modal fade" id="deleteEmployeeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <p class="mb-2">Are you sure you want to soft-delete the following employee?</p>
+                <div class="p-3 bg-light rounded-3 border mb-3">
+                    <div class="fw-bold text-dark" id="modalEmpName">Employee Name</div>
+                    <div class="text-muted small">Employee ID: <span id="modalEmpCode" class="fw-semibold">EMP-000</span></div>
+                </div>
+                <div class="alert alert-warning small mb-0">
+                    <i class="bi bi-info-circle me-1"></i> This record and linked user credentials will be deactivated and moved to the Recycle Bin. Existing historical attendance and payroll data are safely preserved.
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteEmployeeForm" method="POST" action="">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i> Soft Delete Employee
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openDeleteEmployeeModal(empId, empName, empCode) {
+        document.getElementById('modalEmpName').textContent = empName;
+        document.getElementById('modalEmpCode').textContent = empCode;
+        document.getElementById('deleteEmployeeForm').action = '/employees/' + empId + '/delete';
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteEmployeeModal'));
+        deleteModal.show();
+    }
+</script>
 {% endblock %}

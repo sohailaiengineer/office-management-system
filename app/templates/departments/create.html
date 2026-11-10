@@ -28,6 +28,12 @@
                 </div>
             </div>
 
+            <div class="mb-3">
+                <label class="form-label">Department Manager</label>
+                {{ form.manager_id(class="form-select") }}
+                <div class="form-text">Select an employee to lead this department.</div>
+            </div>
+
             <div class="mb-4">
                 <label class="form-label">Scope & Description</label>
                 {{ form.description(class="form-control", rows="3", placeholder="Primary departmental responsibilities...") }}

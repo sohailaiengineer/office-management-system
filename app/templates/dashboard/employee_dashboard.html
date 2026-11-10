@@ -49,83 +49,91 @@
     </div>
 </div>
 
-<!-- Employee KPI Metrics Row -->
+<!-- Employee KPI Metrics Row (Clickable) -->
 <div class="row g-3 mb-4">
     <!-- 1. Today's Attendance -->
     <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap {% if today_attendance %}bg-success-subtle text-success{% else %}bg-warning-subtle text-warning{% endif %}">
-                <i class="bi bi-fingerprint"></i>
-            </div>
-            <div>
-                <div class="kpi-title">Today's Status</div>
-                <div class="kpi-value fs-5">
-                    {% if today_attendance %}
-                        <span class="badge {% if today_attendance.attendance_status == 'Present' %}bg-success{% elif today_attendance.attendance_status == 'Late' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
-                            {{ today_attendance.attendance_status }}
-                        </span>
-                    {% else %}
-                        <span class="badge bg-secondary">Not Clocked In</span>
-                    {% endif %}
+        <a href="{{ url_for('attendance.index') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap {% if today_attendance %}bg-success-subtle text-success{% else %}bg-warning-subtle text-warning{% endif %}">
+                    <i class="bi bi-fingerprint"></i>
                 </div>
-                <small class="text-muted">
-                    {% if today_attendance and today_attendance.clock_in %}
-                        In: {{ today_attendance.clock_in.strftime('%H:%M') }}
-                        {% if today_attendance.clock_out %} &bull; Out: {{ today_attendance.clock_out.strftime('%H:%M') }}{% endif %}
-                    {% else %}
-                        Please punch in
-                    {% endif %}
-                </small>
+                <div>
+                    <div class="kpi-title">Today's Status</div>
+                    <div class="kpi-value fs-5">
+                        {% if today_attendance %}
+                            <span class="badge {% if today_attendance.attendance_status == 'Present' %}bg-success{% elif today_attendance.attendance_status == 'Late' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                {{ today_attendance.attendance_status }}
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary">Not Clocked In</span>
+                        {% endif %}
+                    </div>
+                    <small class="text-muted">
+                        {% if today_attendance and today_attendance.check_in %}
+                            In: {{ today_attendance.check_in.strftime('%H:%M') }}
+                            {% if today_attendance.check_out %} &bull; Out: {{ today_attendance.check_out.strftime('%H:%M') }}{% endif %}
+                        {% else %}
+                            View My Attendance
+                        {% endif %}
+                    </small>
+                </div>
             </div>
-        </div>
+        </a>
     </div>
 
     <!-- 2. Monthly Attendance Summary -->
     <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap bg-primary-subtle text-primary">
-                <i class="bi bi-calendar-check-fill"></i>
+        <a href="{{ url_for('attendance.index') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-primary-subtle text-primary">
+                    <i class="bi bi-calendar-check-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">This Month</div>
+                    <div class="kpi-value">{{ month_present }} <span class="fs-6 text-muted font-monospace">days</span></div>
+                    <small class="text-muted">{{ month_late }} late arrivals &bull; Monthly Logs</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">This Month</div>
-                <div class="kpi-value">{{ month_present }} <span class="fs-6 text-muted font-monospace">days</span></div>
-                <small class="text-muted">{{ month_late }} late arrivals</small>
-            </div>
-        </div>
+        </a>
     </div>
 
     <!-- 3. Leave Balances -->
     <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap bg-info-subtle text-info">
-                <i class="bi bi-calendar-range"></i>
+        <a href="{{ url_for('leaves.index') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-info-subtle text-info">
+                    <i class="bi bi-calendar-range"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Pending Leave Requests</div>
+                    <div class="kpi-value">{{ pending_leaves | length }}</div>
+                    <small class="text-muted">
+                        {% if leave_balances %}
+                            {{ leave_balances[0].remaining_days }}d {{ leave_balances[0].leave_type.name }} left
+                        {% else %}
+                            View Leave Balances
+                        {% endif %}
+                    </small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">Pending Leave Requests</div>
-                <div class="kpi-value">{{ pending_leaves | length }}</div>
-                <small class="text-muted">
-                    {% if leave_balances %}
-                        {{ leave_balances[0].remaining_days }}d {{ leave_balances[0].leave_type.name }} left
-                    {% else %}
-                        Available
-                    {% endif %}
-                </small>
-            </div>
-        </div>
+        </a>
     </div>
 
     <!-- 4. Assigned Tasks -->
     <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap bg-danger-subtle text-danger">
-                <i class="bi bi-check2-square"></i>
+        <a href="{{ url_for('tasks.index') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-danger-subtle text-danger">
+                    <i class="bi bi-check2-square"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">My Assigned Tasks</div>
+                    <div class="kpi-value">{{ (my_pending_tasks | length) + (my_in_progress_tasks | length) }}</div>
+                    <small class="text-success">{{ my_completed_tasks | length }} Completed Tasks</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">My Assigned Tasks</div>
-                <div class="kpi-value">{{ (my_pending_tasks | length) + (my_in_progress_tasks | length) }}</div>
-                <small class="text-success">{{ my_completed_tasks | length }} Completed</small>
-            </div>
-        </div>
+        </a>
     </div>
 </div>
 

@@ -1,4 +1,5 @@
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileAllowed
 from wtforms import StringField, TextAreaField, SelectField, DateField, IntegerField, BooleanField, SubmitField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional
 
@@ -7,6 +8,10 @@ class LeaveRequestForm(FlaskForm):
     start_date = DateField('Start Date', validators=[DataRequired()])
     end_date = DateField('End Date', validators=[DataRequired()])
     reason = TextAreaField('Reason for Leave', validators=[DataRequired(), Length(min=10)])
+    supporting_document = FileField('Supporting Document (Optional)', validators=[
+        Optional(),
+        FileAllowed(['pdf', 'jpg', 'jpeg', 'png', 'docx', 'doc'], 'Permitted document types: PDF, Word, Images')
+    ])
     submit = SubmitField('Submit Leave Application')
 
 

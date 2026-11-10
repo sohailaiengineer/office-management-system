@@ -8,60 +8,119 @@
     <div class="col-lg-4">
         <div class="card-enterprise mb-4">
             <div class="p-3">
-                <button class="btn btn-enterprise-primary w-100" data-bs-toggle="modal" data-bs-target="#composeModal">
+                <button class="btn btn-enterprise-primary w-100 shadow-sm" data-bs-toggle="modal"
+                    data-bs-target="#composeModal">
                     <i class="bi bi-pencil-square me-1"></i> Compose Message
                 </button>
             </div>
             <div class="list-group list-group-flush border-top">
-                <a href="#inboxPane" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center active" data-bs-toggle="tab">
-                    <span><i class="bi bi-inbox-fill me-2"></i>Inbox</span>
-                    <span class="badge bg-light text-dark rounded-pill">{{ inbox_items|length }}</span>
+                <a href="#inboxPane"
+                    class="list-group-item list-group-item-action d-flex justify-content-between align-items-center active py-3"
+                    data-bs-toggle="tab">
+                    <span><i class="bi bi-inbox-fill me-2 text-primary"></i>Inbox</span>
+                    <div>
+                        {% if unread_inbox_count > 0 %}
+                        <span class="badge bg-danger rounded-pill me-1">{{ unread_inbox_count }} New</span>
+                        {% endif %}
+                        <span class="badge bg-light text-dark rounded-pill">{{ inbox_items|length }}</span>
+                    </div>
                 </a>
-                <a href="#sentPane" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-bs-toggle="tab">
-                    <span><i class="bi bi-send-fill me-2"></i>Sent</span>
+                <a href="#sentPane"
+                    class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3"
+                    data-bs-toggle="tab">
+                    <span><i class="bi bi-send-fill me-2 text-success"></i>Sent Outbox</span>
                     <span class="badge bg-light text-dark rounded-pill">{{ sent_items|length }}</span>
                 </a>
             </div>
+        </div>
+
+        <!-- Quick Tips Card -->
+        <div class="card-enterprise p-3 bg-light border-0">
+            <h6 class="fw-bold small text-muted text-uppercase mb-2"><i
+                    class="bi bi-shield-lock-fill text-primary me-1"></i>Privacy Protected</h6>
+            <p class="small text-muted mb-0">Internal messages and documents are end-to-end scoped between the sender
+                and recipient.</p>
         </div>
     </div>
 
     <!-- Right Message Stream -->
     <div class="col-lg-8">
-        <div class="card-enterprise">
+        <div class="card-enterprise shadow-sm">
             <div class="tab-content p-4">
                 <!-- Inbox Pane -->
                 <div class="tab-pane fade show active" id="inboxPane">
-                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-inbox me-2"></i>Received Messages</h6>
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                        <h6 class="fw-bold text-primary mb-0"><i class="bi bi-inbox-fill me-2"></i>Received Messages
+                        </h6>
+                        <span class="text-muted small">{{ inbox_items|length }} Total</span>
+                    </div>
                     <div class="list-group list-group-flush">
                         {% for item in inbox_items %}
-                        <div class="list-group-item px-0 py-3 border-bottom">
+                        <a href="{{ url_for('communication.view_message', msg_id=item.message.id) }}"
+                            class="list-group-item list-group-item-action px-3 py-3 border-bottom rounded mb-2 {% if not item.is_read %}bg-light border-start border-4 border-primary{% endif %}">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="fw-bold">{{ item.message.sender.full_name }}</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fw-bold text-dark">{{ item.message.sender.full_name }}</span>
+                                    <span class="badge bg-secondary-subtle text-dark" style="font-size: 0.72rem;">{{
+                                        item.message.sender.primary_role }}</span>
+                                    {% if not item.is_read %}
+                                    <span class="badge bg-primary" style="font-size: 0.68rem;">UNREAD</span>
+                                    {% endif %}
+                                </div>
                                 <small class="text-muted">{{ item.message.created_at.strftime('%b %d, %H:%M') }}</small>
                             </div>
                             <div class="fw-semibold text-dark small mb-1">{{ item.message.subject }}</div>
-                            <div class="text-secondary small">{{ item.message.body }}</div>
-                        </div>
+                            <div class="text-muted small text-truncate" style="max-width: 550px;">{{ item.message.body
+                                }}</div>
+                            {% if item.message.attachment_path %}
+                            <div class="mt-2">
+                                <span class="badge bg-light text-primary border">
+                                    <i class="bi bi-paperclip me-1"></i> Attachment Included
+                                </span>
+                            </div>
+                            {% endif %}
+                        </a>
                         {% else %}
-                        <p class="text-muted small text-center py-5">No messages in your inbox.</p>
+                        <div class="text-center py-5">
+                            <i class="bi bi-inbox display-4 text-muted mb-2 d-block"></i>
+                            <p class="text-muted small">No messages in your inbox.</p>
+                        </div>
                         {% endfor %}
                     </div>
                 </div>
 
                 <!-- Sent Pane -->
                 <div class="tab-pane fade" id="sentPane">
-                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-send me-2"></i>Sent Outbox</h6>
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                        <h6 class="fw-bold text-success mb-0"><i class="bi bi-send-fill me-2"></i>Sent Outbox</h6>
+                        <span class="text-muted small">{{ sent_items|length }} Sent</span>
+                    </div>
                     <div class="list-group list-group-flush">
                         {% for msg in sent_items %}
-                        <div class="list-group-item px-0 py-3 border-bottom">
+                        <a href="{{ url_for('communication.view_message', msg_id=msg.id) }}"
+                            class="list-group-item list-group-item-action px-3 py-3 border-bottom rounded mb-2">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="fw-bold">Subject: {{ msg.subject }}</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fw-bold text-dark">To: {% for r in msg.recipients %}{{
+                                        r.recipient.full_name }}{% if not loop.last %}, {% endif %}{% endfor %}</span>
+                                </div>
                                 <small class="text-muted">{{ msg.created_at.strftime('%b %d, %H:%M') }}</small>
                             </div>
-                            <div class="text-secondary small">{{ msg.body }}</div>
-                        </div>
+                            <div class="fw-semibold text-dark small mb-1">{{ msg.subject }}</div>
+                            <div class="text-muted small text-truncate" style="max-width: 550px;">{{ msg.body }}</div>
+                            {% if msg.attachment_path %}
+                            <div class="mt-2">
+                                <span class="badge bg-light text-primary border">
+                                    <i class="bi bi-paperclip me-1"></i> Attachment: {{ msg.attachment_path }}
+                                </span>
+                            </div>
+                            {% endif %}
+                        </a>
                         {% else %}
-                        <p class="text-muted small text-center py-5">No sent messages.</p>
+                        <div class="text-center py-5">
+                            <i class="bi bi-send display-4 text-muted mb-2 d-block"></i>
+                            <p class="text-muted small">No sent messages.</p>
+                        </div>
                         {% endfor %}
                     </div>
                 </div>
@@ -72,35 +131,67 @@
 
 <!-- Modal: Compose Message -->
 <div class="modal fade" id="composeModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('communication.messages') }}">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow">
+            <form method="POST" action="{{ url_for('communication.messages') }}" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-header">
-                    <h6 class="modal-title fw-bold">Compose Internal Message</h6>
+                <div class="modal-header bg-light">
+                    <h6 class="modal-title fw-bold"><i class="bi bi-envelope-plus text-primary me-2"></i>Compose
+                        Internal Message</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label">Recipient User *</label>
+                        <label class="form-label fw-semibold">Select Recipient *</label>
                         <select name="recipient_id" class="form-select" required>
-                            {% for u in all_users %}
-                                <option value="{{ u.id }}">{{ u.full_name }} (@{{ u.username }})</option>
-                            {% endfor %}
+                            <option value="">-- Choose Colleague or Department Leader --</option>
+                            <optgroup label="Executive & HR Leadership">
+                                {% for u in all_users if u.primary_role in ['Super Admin', 'HR Manager'] %}
+                                <option value="{{ u.id }}">{{ u.full_name }} ({{ u.primary_role }})</option>
+                                {% endfor %}
+                            </optgroup>
+                            <optgroup label="Department Managers">
+                                {% for u in all_users if u.primary_role == 'Department Manager' %}
+                                <option value="{{ u.id }}">{{ u.full_name }} ({{ u.employee.department.name if
+                                    u.employee and u.employee.department else 'Manager' }})</option>
+                                {% endfor %}
+                            </optgroup>
+                            <optgroup label="Staff / Employees">
+                                {% for u in all_users if u.primary_role not in ['Super Admin', 'HR Manager', 'Department
+                                Manager'] %}
+                                <option value="{{ u.id }}">{{ u.full_name }} ({{ u.employee.department.name if
+                                    u.employee and u.employee.department else 'Staff' }})</option>
+                                {% endfor %}
+                            </optgroup>
                         </select>
+                        <div class="form-text">Choose from executive admin, HR management, department leads, or staff
+                            members.</div>
                     </div>
+
                     <div class="mb-3">
-                        <label class="form-label">Subject *</label>
-                        <input type="text" name="subject" class="form-control" placeholder="Discussion topic..." required>
+                        <label class="form-label fw-semibold">Subject *</label>
+                        <input type="text" name="subject" class="form-control" placeholder="Brief subject line..."
+                            required>
                     </div>
+
                     <div class="mb-3">
-                        <label class="form-label">Message Body *</label>
-                        <textarea name="body" class="form-control" rows="4" placeholder="Type your message here..." required></textarea>
+                        <label class="form-label fw-semibold">Message Body *</label>
+                        <textarea name="body" class="form-control" rows="5" placeholder="Write your message here..."
+                            required></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Supporting Document Attachment (Optional)</label>
+                        <input type="file" name="attachment" class="form-control"
+                            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.zip,.txt">
+                        <div class="form-text">Supported formats: PDF, DOCX, PNG, JPG, ZIP (Max 10MB).</div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-sm btn-primary">Send Message</button>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-enterprise-primary">
+                        <i class="bi bi-send-fill me-1"></i> Send Message
+                    </button>
                 </div>
             </form>
         </div>

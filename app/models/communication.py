@@ -44,6 +44,7 @@ class Message(db.Model, AuditSoftDeleteMixin):
     body = db.Column(db.Text, nullable=False)
     parent_message_id = db.Column(db.Integer, db.ForeignKey('messages.id', ondelete='SET NULL'), nullable=True)
     is_broadcast = db.Column(db.Boolean, default=False, nullable=False)
+    attachment_path = db.Column(db.String(255), nullable=True)
 
     sender = db.relationship('User', foreign_keys=[sender_id])
     recipients = db.relationship('MessageRecipient', back_populates='message', cascade='all, delete-orphan')

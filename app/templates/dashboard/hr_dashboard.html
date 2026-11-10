@@ -28,118 +28,134 @@
     </div>
 </div>
 
-<!-- HR KPI Metrics Row (8 Targeted Cards) -->
+<!-- HR KPI Metrics Row (Clickable & Filtered) -->
 <div class="row g-3 mb-4">
     <!-- 1. Total Employees -->
     <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap bg-success-subtle text-success">
-                <i class="bi bi-people-fill"></i>
+        <a href="{{ url_for('employees.index') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-success-subtle text-success">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Total Headcount</div>
+                    <div class="kpi-value">{{ total_employees }}</div>
+                    <small class="text-success"><i class="bi bi-check-circle me-1"></i>{{ active_employees }} Active</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">Total Headcount</div>
-                <div class="kpi-value">{{ total_employees }}</div>
-                <small class="text-success"><i class="bi bi-check-circle me-1"></i>{{ active_employees }} Active</small>
-            </div>
-        </div>
+        </a>
     </div>
 
     <!-- 2. New Joiners (Last 60 Days) -->
     <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap bg-primary-subtle text-primary">
-                <i class="bi bi-person-badge-fill"></i>
+        <a href="{{ url_for('employees.index') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-primary-subtle text-primary">
+                    <i class="bi bi-person-badge-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">New Hires</div>
+                    <div class="kpi-value">{{ new_employees_count }}</div>
+                    <small class="text-muted">Recent Onboarding</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">New Hires</div>
-                <div class="kpi-value">{{ new_employees_count }}</div>
-                <small class="text-muted">Recent Onboarding</small>
-            </div>
-        </div>
+        </a>
     </div>
 
     <!-- 3. Employees on Leave Today -->
     <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap bg-info-subtle text-info">
-                <i class="bi bi-calendar-x-fill"></i>
+        <a href="{{ url_for('leaves.index', status='Approved') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-info-subtle text-info">
+                    <i class="bi bi-calendar-x-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">On Leave Today</div>
+                    <div class="kpi-value">{{ employees_on_leave_today }}</div>
+                    <small class="text-muted">Approved Leaves</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">On Leave Today</div>
-                <div class="kpi-value">{{ employees_on_leave_today }}</div>
-                <small class="text-muted">Approved Leaves</small>
-            </div>
-        </div>
+        </a>
     </div>
 
     <!-- 4. Today's Attendance -->
     <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap bg-success-subtle text-success">
-                <i class="bi bi-clock-fill"></i>
+        <a href="{{ url_for('attendance.index', status='Present') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-success-subtle text-success">
+                    <i class="bi bi-clock-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Present Today</div>
+                    <div class="kpi-value text-success">{{ today_attendance }}</div>
+                    <small class="text-muted">{{ att_late }} Late &bull; Verified In</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">Present Today</div>
-                <div class="kpi-value">{{ today_attendance }}</div>
-                <small class="text-muted">{{ att_late }} Late &bull; {{ att_absent }} Absent</small>
-            </div>
-        </div>
+        </a>
     </div>
 
     <!-- 5. Pending Leave Applications -->
     <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap bg-warning-subtle text-warning">
-                <i class="bi bi-hourglass-split"></i>
+        <a href="{{ url_for('leaves.index', status='Pending') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-warning-subtle text-warning">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Pending Leaves</div>
+                    <div class="kpi-value text-warning">{{ pending_leaves }}</div>
+                    <small class="text-warning"><i class="bi bi-exclamation-circle me-1"></i>Awaiting Decision</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">Pending Leaves</div>
-                <div class="kpi-value">{{ pending_leaves }}</div>
-                <small class="text-warning"><i class="bi bi-exclamation-circle me-1"></i>Awaiting Decision</small>
-            </div>
-        </div>
+        </a>
     </div>
 
     <!-- 6. Approved Leaves This Month -->
     <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap bg-success-subtle text-success">
-                <i class="bi bi-calendar-check-fill"></i>
+        <a href="{{ url_for('leaves.index', status='Approved') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-success-subtle text-success">
+                    <i class="bi bi-calendar-check-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Leaves Approved</div>
+                    <div class="kpi-value text-success">{{ approved_leaves_month }}</div>
+                    <small class="text-muted">Current Month</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">Leaves Approved</div>
-                <div class="kpi-value">{{ approved_leaves_month }}</div>
-                <small class="text-muted">Current Month</small>
-            </div>
-        </div>
+        </a>
     </div>
 
     <!-- 7. Monthly Payroll -->
     <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap" style="background-color: #f3e8ff; color: #7e22ce;">
-                <i class="bi bi-cash-coin"></i>
+        <a href="{{ url_for('payroll.index') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap" style="background-color: #f3e8ff; color: #7e22ce;">
+                    <i class="bi bi-cash-coin"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Monthly Payroll</div>
+                    <div class="kpi-value" style="color: #7e22ce;">${{ "{:,.0f}".format(monthly_payroll_amount) }}</div>
+                    <small class="text-muted">Latest Batch Run</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">Monthly Payroll</div>
-                <div class="kpi-value">${{ "{:,.0f}".format(monthly_payroll_amount) }}</div>
-                <small class="text-muted">Latest Batch Run</small>
-            </div>
-        </div>
+        </a>
     </div>
 
     <!-- 8. Absent Employees -->
     <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap bg-danger-subtle text-danger">
-                <i class="bi bi-person-x-fill"></i>
+        <a href="{{ url_for('attendance.index', status='Absent') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-danger-subtle text-danger">
+                    <i class="bi bi-person-x-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Absent Today</div>
+                    <div class="kpi-value text-danger">{{ att_absent }}</div>
+                    <small class="text-danger">Unaccounted absence</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">Absent Today</div>
-                <div class="kpi-value">{{ att_absent }}</div>
-                <small class="text-danger">Unaccounted absence</small>
-            </div>
-        </div>
+        </a>
     </div>
 </div>
 

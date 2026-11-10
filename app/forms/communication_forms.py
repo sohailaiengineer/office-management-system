@@ -1,4 +1,5 @@
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileAllowed
 from wtforms import StringField, TextAreaField, SelectField, BooleanField, SubmitField
 from wtforms.validators import DataRequired, Length, Optional
 
@@ -16,8 +17,17 @@ class AnnouncementForm(FlaskForm):
 
 
 class DirectMessageForm(FlaskForm):
-    recipient_id = SelectField('Recipient', coerce=int, validators=[DataRequired()])
+    recipient_type = SelectField('Recipient Category', choices=[
+        ('specific', 'Specific Person / Colleague'),
+        ('admin', 'Super Admin'),
+        ('hr', 'HR Manager'),
+        ('dept_manager', 'Department Manager')
+    ], default='specific', validators=[Optional()])
+    recipient_id = SelectField('Select Recipient', coerce=int, validators=[DataRequired()])
     subject = StringField('Subject', validators=[DataRequired(), Length(max=200)])
-    body = TextAreaField('Message Content', validators=[DataRequired(), Length(min=5)])
+    body = TextAreaField('Message Content', validators=[DataRequired(), Length(min=2)])
+    attachment = FileField('Attach File (Optional)', validators=[
+        Optional(),
+        FileAllowed(['pdf', 'docx', 'doc', 'xlsx', 'xls', 'csv', 'png', 'jpg', 'jpeg', 'txt'], 'Permitted: PDF, Word, Excel, CSV, Images')
+    ])
     submit = SubmitField('Send Message')
-

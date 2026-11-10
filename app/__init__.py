@@ -38,6 +38,7 @@ def create_app(config_name=None):
         user_role = 'anonymous'
         managed_department = None
         unread_notifications_count = 0
+        unread_messages_count = 0
         pending_leaves_count = 0
 
         user_id = session.get('user_id')
@@ -45,11 +46,14 @@ def create_app(config_name=None):
             current_user = db.session.get(User, user_id)
             if current_user:
                 from app.utils.decorators import get_user_role, get_managed_department
-                from app.models.communication import Notification
+                from app.models.communication import Notification, MessageRecipient
                 user_role = get_user_role(current_user)
                 managed_department = get_managed_department(current_user)
                 unread_notifications_count = Notification.active_query().filter_by(
                     user_id=current_user.id, is_read=False
+                ).count()
+                unread_messages_count = MessageRecipient.active_query().filter_by(
+                    recipient_id=current_user.id, is_read=False
                 ).count()
 
                 if user_role in ['super_admin', 'hr_manager']:
@@ -67,6 +71,7 @@ def create_app(config_name=None):
             'user_role': user_role,
             'managed_department': managed_department,
             'unread_notifications_count': unread_notifications_count,
+            'unread_messages_count': unread_messages_count,
             'pending_leaves_count': pending_leaves_count,
             'app_name': 'OMS Enterprise',
             'app_version': '2.0.0'

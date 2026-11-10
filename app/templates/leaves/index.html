@@ -51,29 +51,39 @@
         </div>
     </div>
 
-    <!-- Status Filters -->
+    <!-- Search & Filters Toolbar -->
     <div class="p-3 bg-light border-bottom">
-        <div class="d-flex gap-2 flex-wrap">
-            <a href="{{ url_for('leaves.index') }}" class="btn btn-sm {% if not selected_status %}btn-primary{% else %}btn-outline-secondary{% endif %}">All Applications</a>
-            <a href="{{ url_for('leaves.index', status='Pending') }}" class="btn btn-sm {% if selected_status == 'Pending' %}btn-warning text-dark{% else %}btn-outline-warning{% endif %}">Pending</a>
-            <a href="{{ url_for('leaves.index', status='Approved') }}" class="btn btn-sm {% if selected_status == 'Approved' %}btn-success{% else %}btn-outline-success{% endif %}">Approved</a>
-            <a href="{{ url_for('leaves.index', status='Rejected') }}" class="btn btn-sm {% if selected_status == 'Rejected' %}btn-danger{% else %}btn-outline-danger{% endif %}">Rejected</a>
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ url_for('leaves.index') }}" class="btn btn-sm {% if not selected_status %}btn-primary{% else %}btn-outline-secondary{% endif %}">All Applications</a>
+                <a href="{{ url_for('leaves.index', status='Pending') }}" class="btn btn-sm {% if selected_status|lower == 'pending' %}btn-warning text-dark{% else %}btn-outline-warning{% endif %}">Pending</a>
+                <a href="{{ url_for('leaves.index', status='Approved') }}" class="btn btn-sm {% if selected_status|lower == 'approved' %}btn-success{% else %}btn-outline-success{% endif %}">Approved</a>
+                <a href="{{ url_for('leaves.index', status='Rejected') }}" class="btn btn-sm {% if selected_status|lower == 'rejected' %}btn-danger{% else %}btn-outline-danger{% endif %}">Rejected</a>
+            </div>
+            <form method="GET" action="{{ url_for('leaves.index') }}" class="d-flex gap-2">
+                {% if selected_status %}<input type="hidden" name="status" value="{{ selected_status }}">{% endif %}
+                <div class="input-group input-group-sm" style="max-width: 260px;">
+                    <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="search" class="form-control" placeholder="Search applicant/reason..." value="{{ search_query or '' }}">
+                </div>
+                <button type="submit" class="btn btn-sm btn-outline-primary">Filter</button>
+            </form>
         </div>
     </div>
 
     <div class="table-responsive">
-        <table class="table table-enterprise">
+        <table class="table table-enterprise mb-0">
             <thead>
                 <tr>
                     <th>Ref #</th>
                     <th>Employee</th>
                     <th>Leave Type</th>
-                    <th>Start Date</th>
-                    <th>End Date</th>
+                    <th>Duration</th>
                     <th>Days</th>
                     <th>Reason</th>
+                    <th>Document</th>
                     <th>Approval Status</th>
-                    {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) %}
+                    {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) or 'dept_manager' in session.get('roles', []) %}
                     <th class="text-end">Managerial Action</th>
                     {% endif %}
                 </tr>
@@ -82,12 +92,33 @@
                 {% for req in leaves %}
                 <tr>
                     <td><code>LR-{{ "%04d"|format(req.id) }}</code></td>
-                    <td class="fw-semibold">{{ req.employee.full_name }}</td>
+                    <td>
+                        <div class="fw-semibold">{{ req.employee.full_name }}</div>
+                        <small class="text-muted">{{ req.employee.emp_code }} &bull; {{ req.employee.department.name if req.employee.department else 'General' }}</small>
+                    </td>
                     <td><span class="badge badge-soft-info">{{ req.leave_type.name }}</span></td>
-                    <td>{{ req.start_date.strftime('%b %d, %Y') }}</td>
-                    <td>{{ req.end_date.strftime('%b %d, %Y') }}</td>
+                    <td>
+                        <div class="small fw-semibold">{{ req.start_date.strftime('%b %d, %Y') }}</div>
+                        <small class="text-muted">to {{ req.end_date.strftime('%b %d, %Y') }}</small>
+                    </td>
                     <td><strong>{{ req.total_days|int }}</strong></td>
-                    <td class="text-muted small" style="max-width: 250px;">{{ req.reason }}</td>
+                    <td class="text-muted small" style="max-width: 220px;">
+                        {{ req.reason }}
+                        {% if req.rejection_reason %}
+                            <div class="text-danger mt-1 small"><strong>Note:</strong> {{ req.rejection_reason }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if req.attachments %}
+                            {% for att in req.attachments %}
+                                <a href="{{ url_for('static', filename=att.file_path) }}" target="_blank" class="btn btn-xs btn-outline-info" title="View attached document">
+                                    <i class="bi bi-paperclip me-1"></i>Doc
+                                </a>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-muted small">None</span>
+                        {% endif %}
+                    </td>
                     <td>
                         {% if req.approval_status == 'Pending' %}
                             <span class="badge badge-soft-warning"><i class="bi bi-hourglass-split me-1"></i>Pending</span>
@@ -99,18 +130,18 @@
                             <span class="badge badge-soft-secondary">{{ req.approval_status }}</span>
                         {% endif %}
                     </td>
-                    {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) %}
+                    {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) or 'dept_manager' in session.get('roles', []) %}
                     <td class="text-end">
                         {% if req.approval_status == 'Pending' %}
                         <div class="btn-group btn-group-sm">
                             <form method="POST" action="{{ url_for('leaves.take_action', req_id=req.id) }}" class="d-inline">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="action" value="Approved">
-                                <button type="submit" class="btn btn-outline-success" title="Approve">
+                                <button type="submit" class="btn btn-outline-success" title="Approve Leave">
                                     <i class="bi bi-check-lg"></i>
                                 </button>
                             </form>
-                            <button type="button" class="btn btn-outline-danger ms-1" data-bs-toggle="modal" data-bs-target="#rejectModal{{ req.id }}" title="Reject">
+                            <button type="button" class="btn btn-outline-danger ms-1" data-bs-toggle="modal" data-bs-target="#rejectModal{{ req.id }}" title="Reject Leave">
                                 <i class="bi bi-x-lg"></i>
                             </button>
                             <form method="POST" action="{{ url_for('leaves.cancel_request', req_id=req.id) }}" class="d-inline confirm-delete-form" data-confirm-message="Cancel this leave application?">
@@ -134,7 +165,7 @@
                                         </div>
                                         <div class="modal-body">
                                             <div class="mb-3">
-                                                <label class="form-label">Reason for Rejection *</label>
+                                                <label class="form-label fw-semibold">Reason for Rejection *</label>
                                                 <textarea name="comments" class="form-control" rows="3" required placeholder="Provide reason or operational constraints..."></textarea>
                                             </div>
                                         </div>
@@ -154,11 +185,35 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="9" class="text-center text-muted py-5">No leave applications recorded.</td>
+                    <td colspan="9" class="text-center text-muted py-5">No leave applications found matching current criteria.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+
+    <!-- Pagination Controls -->
+    {% if pagination and pagination.pages > 1 %}
+    <div class="p-3 border-top d-flex justify-content-between align-items-center">
+        <small class="text-muted">Showing page {{ pagination.page }} of {{ pagination.pages }} ({{ pagination.total }} records)</small>
+        <ul class="pagination pagination-sm mb-0">
+            {% if pagination.has_prev %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('leaves.index', page=pagination.prev_num, status=selected_status, search=search_query) }}">Previous</a></li>
+            {% endif %}
+            {% for p in pagination.iter_pages() %}
+                {% if p %}
+                    <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('leaves.index', page=p, status=selected_status, search=search_query) }}">{{ p }}</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                {% endif %}
+            {% endfor %}
+            {% if pagination.has_next %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('leaves.index', page=pagination.next_num, status=selected_status, search=search_query) }}">Next</a></li>
+            {% endif %}
+        </ul>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

@@ -22,6 +22,7 @@ def index():
     page = request.args.get('page', 1, type=int)
     date_filter = request.args.get('date', date.today().strftime('%Y-%m-%d'))
     dept_id = request.args.get('department_id', '', type=str)
+    status_filter = request.args.get('status', '').strip()
 
     query = Attendance.active_query().join(Employee, Attendance.employee_id == Employee.id)
 
@@ -31,6 +32,9 @@ def index():
             query = query.filter(Attendance.date == target_date)
         except ValueError:
             pass
+
+    if status_filter:
+        query = query.filter(Attendance.attendance_status.ilike(f"%{status_filter}%"))
 
     # Strict role scoping:
     if role == 'employee':
@@ -60,6 +64,7 @@ def index():
         pagination=pagination,
         attendances=pagination.items,
         selected_date=date_filter,
+        selected_status=status_filter,
         today_att=today_att,
         user_role=role
     )

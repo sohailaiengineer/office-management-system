@@ -8,15 +8,24 @@
         <div>
             <h5 class="fw-bold mb-1">{{ payroll.title }}</h5>
             <div class="text-muted small">
-                <span>Month: {{ payroll.month }}/{{ payroll.year }}</span> &bull; 
-                <span>Status: <span class="badge {% if payroll.payroll_status == 'Paid' %}bg-success{% else %}bg-warning text-dark{% endif %}">{{ payroll.payroll_status }}</span></span>
+                <span>Month: {{ payroll.month }}/{{ payroll.year }}</span> &bull;
+                <span>Status:
+                    {% if payroll.payroll_status == 'Paid' %}
+                    <span class="badge bg-success">Paid</span>
+                    {% elif payroll.payroll_status == 'Pending' %}
+                    <span class="badge bg-warning text-dark">Pending</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Draft</span>
+                    {% endif %}
+                </span>
             </div>
         </div>
         <div class="d-flex align-items-center gap-2">
             <a href="{{ url_for('payroll.index') }}" class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-arrow-left me-1"></i> Back to Payrolls
             </a>
-            {% if payroll.payroll_status != 'Paid' and (session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', [])) %}
+            {% if payroll.payroll_status != 'Paid' and (session.get('is_admin') or 'super_admin' in session.get('roles',
+            []) or 'hr_manager' in session.get('roles', [])) %}
             <form method="POST" action="{{ url_for('payroll.mark_paid', payroll_id=payroll.id) }}" class="d-inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-sm btn-success">
@@ -31,21 +40,22 @@
     <div class="row g-0 text-center border-bottom">
         <div class="col-md-4 p-3 border-end">
             <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">GROSS DISBURSEMENT</small>
-            <h4 class="fw-bold mb-0 text-dark">${{ "{:,.2f}".format(payroll.total_amount) }}</h4>
+            <h4 class="fw-bold mb-0 text-dark">${{ "{:,.2f}".format(payroll.total_amount or 0) }}</h4>
         </div>
         <div class="col-md-4 p-3 border-end">
             <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">TOTAL DEDUCTIONS</small>
-            <h4 class="fw-bold mb-0 text-danger">-${{ "{:,.2f}".format(payroll.total_deductions) }}</h4>
+            <h4 class="fw-bold mb-0 text-danger">-${{ "{:,.2f}".format(payroll.total_deductions or 0) }}</h4>
         </div>
         <div class="col-md-4 p-3">
-            <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">NET PAYROLL EXPENDITURE</small>
-            <h4 class="fw-bold mb-0 text-success">${{ "{:,.2f}".format(payroll.net_amount) }}</h4>
+            <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">NET PAYROLL
+                EXPENDITURE</small>
+            <h4 class="fw-bold mb-0 text-success">${{ "{:,.2f}".format(payroll.net_amount or 0) }}</h4>
         </div>
     </div>
 
     <!-- Payslips Roster -->
     <div class="table-responsive">
-        <table class="table table-enterprise">
+        <table class="table table-enterprise mb-0">
             <thead>
                 <tr>
                     <th>Emp Code</th>
@@ -53,38 +63,78 @@
                     <th>Basic Salary</th>
                     <th>Allowances</th>
                     <th>Bonuses</th>
+                    <th>Overtime</th>
                     <th>Deductions</th>
                     <th>Net Salary</th>
                     <th>Status</th>
-                    <th class="text-end">Salary Slip</th>
+                    <th class="text-end">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for d in payroll.details %}
                 <tr>
-                    <td><span class="badge bg-light text-dark border">{{ d.employee.emp_code }}</span></td>
-                    <td class="fw-semibold">{{ d.employee.full_name }}</td>
-                    <td>${{ "{:,.2f}".format(d.basic) }}</td>
-                    <td>${{ "{:,.2f}".format(d.allowances) }}</td>
-                    <td class="text-success">+${{ "{:,.2f}".format(d.bonuses_total) }}</td>
-                    <td class="text-danger">-${{ "{:,.2f}".format(d.deductions_total) }}</td>
-                    <td class="fw-bold text-success">${{ "{:,.2f}".format(d.net_salary) }}</td>
+                    <td><span class="badge bg-light text-dark border">{{ d.employee.emp_code if d.employee else 'N/A'
+                            }}</span></td>
+                    <td class="fw-semibold">{{ d.employee.full_name if d.employee else 'Employee' }}</td>
+                    <td>${{ "{:,.2f}".format(d.basic or 0) }}</td>
+                    <td>${{ "{:,.2f}".format(d.allowances or 0) }}</td>
+                    <td class="text-success">+${{ "{:,.2f}".format(d.bonuses_total or 0) }}</td>
+                    <td>${{ "{:,.2f}".format(d.overtime_amount or 0) }}</td>
+                    <td class="text-danger">-${{ "{:,.2f}".format(d.deductions_total or 0) }}</td>
+                    <td class="fw-bold text-success">${{ "{:,.2f}".format(d.net_salary or 0) }}</td>
                     <td>
-                        {% if d.payment_status == 'Paid' %}
-                            <span class="badge badge-soft-success">Paid</span>
-                        {% else %}
-                            <span class="badge badge-soft-warning">Unpaid</span>
-                        {% endif %}
+                        <div class="dropdown d-inline">
+                            {% if d.payment_status == 'Paid' %}
+                            <span class="badge badge-soft-success dropdown-toggle" role="button"
+                                data-bs-toggle="dropdown">Paid</span>
+                            {% elif d.payment_status == 'Pending' %}
+                            <span class="badge badge-soft-warning dropdown-toggle" role="button"
+                                data-bs-toggle="dropdown">Pending</span>
+                            {% else %}
+                            <span class="badge badge-soft-secondary dropdown-toggle" role="button"
+                                data-bs-toggle="dropdown">Unpaid</span>
+                            {% endif %}
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                <li>
+                                    <form method="POST"
+                                        action="{{ url_for('payroll.update_detail_status', detail_id=d.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="status" value="Paid">
+                                        <button type="submit" class="dropdown-item small text-success"><i
+                                                class="bi bi-check-circle me-1"></i> Mark Paid</button>
+                                    </form>
+                                </li>
+                                <li>
+                                    <form method="POST"
+                                        action="{{ url_for('payroll.update_detail_status', detail_id=d.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="status" value="Pending">
+                                        <button type="submit" class="dropdown-item small text-warning"><i
+                                                class="bi bi-clock me-1"></i> Mark Pending</button>
+                                    </form>
+                                </li>
+                                <li>
+                                    <form method="POST"
+                                        action="{{ url_for('payroll.update_detail_status', detail_id=d.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="status" value="Unpaid">
+                                        <button type="submit" class="dropdown-item small text-secondary"><i
+                                                class="bi bi-x-circle me-1"></i> Mark Unpaid</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
                     </td>
                     <td class="text-end">
-                        <a href="{{ url_for('payroll.payslip', detail_id=d.id) }}" class="btn btn-sm btn-outline-primary" target="_blank" title="Print Salary Slip">
+                        <a href="{{ url_for('payroll.view_payslip', detail_id=d.id) }}"
+                            class="btn btn-sm btn-outline-primary" target="_blank" title="Print Salary Slip">
                             <i class="bi bi-printer me-1"></i> Payslip
                         </a>
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="9" class="text-center text-muted py-5">No detail payslips generated.</td>
+                    <td colspan="10" class="text-center text-muted py-5">No detail payslips generated.</td>
                 </tr>
                 {% endfor %}
             </tbody>

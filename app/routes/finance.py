@@ -4,10 +4,10 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from app.extensions import db
 from app.models.finance import Expense, ExpenseCategory, ExpenseApproval, Invoice, Payment
 from app.models.client import Client
-from app.models.employee import Employee
+from app.models.employee import Employee, Department
 from app.forms.finance_forms import ExpenseForm, InvoiceForm
 from app.services.audit_service import log_audit
-from app.utils.decorators import login_required, hr_or_admin_required, get_current_user
+from app.utils.decorators import login_required, hr_or_admin_required, get_current_user, get_user_role, get_managed_department
 from app.utils import utc_now
 
 finance_bp = Blueprint('finance', __name__, url_prefix='/finance')
@@ -16,10 +16,33 @@ finance_bp = Blueprint('finance', __name__, url_prefix='/finance')
 @login_required
 def index():
     user = get_current_user()
-    expenses = Expense.active_query().order_by(Expense.id.desc()).limit(20).all()
-    invoices = Invoice.active_query().order_by(Invoice.id.desc()).limit(20).all()
-    categories = ExpenseCategory.active_query().all()
+    role = get_user_role(user)
+    dept_code = user.employee.department.code if user.employee and user.employee.department else ''
+    is_finance_dept = (dept_code == 'FIN')
+    is_admin = (role == 'super_admin')
 
+    # Department Isolation Logic:
+    # 1. Super Admin and Finance Department personnel see full company books.
+    # 2. Other Department Managers only see expenses incurred by their own department team.
+    # 3. Regular employees only see their own submitted expense claims.
+    if is_admin or is_finance_dept:
+        expenses = Expense.active_query().order_by(Expense.id.desc()).limit(50).all()
+        invoices = Invoice.active_query().order_by(Invoice.id.desc()).limit(50).all()
+    elif role == 'dept_manager':
+        managed_dept = get_managed_department(user)
+        if managed_dept:
+            dept_emp_ids = [e.id for e in managed_dept.employees if not e.is_deleted]
+            expenses = Expense.active_query().filter(Expense.paid_by_id.in_(dept_emp_ids)).order_by(Expense.id.desc()).all()
+        else:
+            expenses = []
+        invoices = [] # Invoices are confidential to Finance and Admin
+    else:
+        # Regular employee
+        emp_id = user.employee.id if user.employee else 0
+        expenses = Expense.active_query().filter_by(paid_by_id=emp_id).order_by(Expense.id.desc()).all()
+        invoices = []
+
+    categories = ExpenseCategory.active_query().all()
     total_expense = sum(e.amount for e in expenses if e.expense_status in ['Approved', 'Reimbursed'])
     total_invoiced = sum(i.total_amount for i in invoices)
     total_received = sum(i.amount_paid for i in invoices)
@@ -31,7 +54,9 @@ def index():
         categories=categories,
         total_expense=total_expense,
         total_invoiced=total_invoiced,
-        total_received=total_received
+        total_received=total_received,
+        is_finance_dept=is_finance_dept,
+        is_admin=is_admin
     )
 
 
@@ -68,98 +93,45 @@ def create_expense():
     return render_template('finance/create_expense.html', form=form)
 
 
-@finance_bp.route('/expenses/<int:exp_id>/action', methods=['POST'])
-@login_required
-@hr_or_admin_required
-def approve_expense(exp_id):
-    expense = Expense.get_active_or_404(exp_id)
-    action = request.form.get('action') # Approved or Rejected
-    user = get_current_user()
-
-    if action in ['Approved', 'Rejected']:
-        expense.expense_status = action
-        expense.updated_by = user.id
-
-        approval = ExpenseApproval(
-            expense_id=expense.id,
-            approver_id=user.employee.id if user.employee else expense.paid_by_id,
-            action=action,
-            comments=request.form.get('comments', ''),
-            action_at=utc_now(),
-            created_by=user.id,
-            updated_by=user.id
-        )
-        db.session.add(approval)
-        db.session.commit()
-        log_audit('UPDATE', 'expenses', expense.id, None, {'status': action})
-        flash(f'Expense claim #{expense.id} {action.lower()}.', 'success')
-
-    return redirect(url_for('finance.index'))
-
-
 @finance_bp.route('/invoices/create', methods=['GET', 'POST'])
 @login_required
-@hr_or_admin_required
 def create_invoice():
+    user = get_current_user()
+    role = get_user_role(user)
+    dept_code = user.employee.department.code if user.employee and user.employee.department else ''
+
+    # Only Super Admin and Finance Department personnel can create invoices
+    if role != 'super_admin' and dept_code != 'FIN':
+        flash('Access Denied: Invoicing and billing operations are restricted to Finance & Accounts and Super Admin.', 'danger')
+        return redirect(url_for('finance.index'))
+
     form = InvoiceForm()
     form.client_id.choices = [(c.id, c.company_name) for c in Client.active_query().all()]
-    form.issue_date.data = date.today()
+    if request.method == 'GET':
+        form.issue_date.data = date.today()
 
     if form.validate_on_submit():
-        user = get_current_user()
-        inv = Invoice(
-            invoice_number=form.invoice_number.data.strip(),
+        if Invoice.query.filter_by(invoice_number=form.invoice_number.data.strip()).first():
+            flash('Invoice number must be unique.', 'danger')
+            return render_template('finance/create_invoice.html', form=form)
+
+        invoice = Invoice(
             client_id=form.client_id.data,
+            invoice_number=form.invoice_number.data.strip(),
             issue_date=form.issue_date.data,
             due_date=form.due_date.data,
-            subtotal=form.subtotal.data,
-            tax_amount=form.tax_amount.data,
             total_amount=form.total_amount.data,
-            amount_paid=Decimal('0.00'),
-            payment_status='Sent',
+            tax_rate=form.tax_rate.data or Decimal('0.00'),
             notes=form.notes.data.strip() if form.notes.data else None,
+            invoice_status='Sent',
             created_by=user.id,
             updated_by=user.id
         )
-        db.session.add(inv)
+        db.session.add(invoice)
         db.session.commit()
 
-        log_audit('CREATE', 'invoices', inv.id, None, {'invoice_number': inv.invoice_number, 'total': str(inv.total_amount)})
-        flash(f'Invoice {inv.invoice_number} generated successfully.', 'success')
+        log_audit('CREATE', 'invoices', invoice.id, None, {'number': invoice.invoice_number, 'total': str(invoice.total_amount)})
+        flash(f'Invoice {invoice.invoice_number} created successfully.', 'success')
         return redirect(url_for('finance.index'))
 
     return render_template('finance/create_invoice.html', form=form)
-
-
-@finance_bp.route('/invoices/<int:inv_id>/payment', methods=['POST'])
-@login_required
-@hr_or_admin_required
-def record_payment(inv_id):
-    invoice = Invoice.get_active_or_404(inv_id)
-    user = get_current_user()
-    amount = Decimal(request.form.get('amount', '0.00'))
-    method = request.form.get('payment_method', 'Bank Transfer')
-    ref = request.form.get('transaction_ref', '')
-
-    if amount > 0:
-        pay = Payment(
-            invoice_id=invoice.id,
-            amount=amount,
-            payment_date=date.today(),
-            payment_method=method,
-            transaction_ref=ref,
-            created_by=user.id,
-            updated_by=user.id
-        )
-        db.session.add(pay)
-        invoice.amount_paid += amount
-        if invoice.amount_paid >= invoice.total_amount:
-            invoice.payment_status = 'Paid'
-        else:
-            invoice.payment_status = 'Partially-Paid'
-
-        db.session.commit()
-        log_audit('CREATE', 'payments', pay.id, None, {'invoice_id': invoice.id, 'amount': str(amount)})
-        flash(f'Payment of ${amount:,.2f} recorded for Invoice {invoice.invoice_number}.', 'success')
-
-    return redirect(url_for('finance.index'))

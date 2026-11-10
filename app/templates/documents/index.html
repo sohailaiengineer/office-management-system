@@ -3,11 +3,11 @@
 {% block page_title %}Corporate Document Repository{% endblock %}
 
 {% block content %}
-<div class="card-enterprise">
-    <div class="card-header-enterprise flex-wrap gap-3">
+<div class="card-enterprise shadow-sm">
+    <div class="card-header-enterprise flex-wrap gap-3 py-3">
         <div>
-            <h6 class="card-title-enterprise"><i class="bi bi-folder-fill me-2 text-primary"></i>Knowledge Base & Documents</h6>
-            <small class="text-muted">Policies, contracts, technical specifications, and organizational handbooks</small>
+            <h6 class="card-title-enterprise mb-0"><i class="bi bi-folder-fill me-2 text-primary"></i>Knowledge Base & Documents</h6>
+            <small class="text-muted">Centralized repository for corporate policies, contracts, technical specifications, and handbooks</small>
         </div>
         <div class="d-flex align-items-center gap-2">
             <a href="{{ url_for('documents.upload') }}" class="btn btn-enterprise-primary btn-sm">
@@ -16,27 +16,58 @@
         </div>
     </div>
 
-    <!-- Category Filters -->
+    <!-- Multi-criteria Filter Bar -->
     <div class="p-3 bg-light border-bottom">
-        <div class="d-flex gap-2 flex-wrap">
-            <a href="{{ url_for('documents.index') }}" class="btn btn-sm {% if not selected_category %}btn-primary{% else %}btn-outline-secondary{% endif %}">All Categories</a>
-            {% for cat in categories %}
-            <a href="{{ url_for('documents.index', category_id=cat.id) }}" class="btn btn-sm {% if selected_category == cat.id|string %}btn-primary{% else %}btn-outline-secondary{% endif %}">
-                {{ cat.name }}
-            </a>
-            {% endfor %}
-        </div>
+        <form method="GET" action="{{ url_for('documents.index') }}" class="row g-2 align-items-center">
+            <div class="col-md-3">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" class="form-control" placeholder="Search by title or summary..." value="{{ search or '' }}">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <select name="category_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if selected_category == cat.id|string %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="department_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Departments</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept.id }}" {% if selected_dept == dept.id|string %}selected{% endif %}>{{ dept.name }} ({{ dept.code }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="file_type" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All File Types</option>
+                    <option value="pdf" {% if selected_file_type == 'pdf' %}selected{% endif %}>PDF Document</option>
+                    <option value="docx" {% if selected_file_type == 'docx' %}selected{% endif %}>Word (.docx)</option>
+                    <option value="xlsx" {% if selected_file_type == 'xlsx' %}selected{% endif %}>Excel (.xlsx)</option>
+                    <option value="png" {% if selected_file_type == 'png' %}selected{% endif %}>Image (.png/.jpg)</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-1">
+                <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-funnel me-1"></i>Filter</button>
+                {% if search or selected_category or selected_dept or selected_file_type %}
+                <a href="{{ url_for('documents.index') }}" class="btn btn-sm btn-outline-secondary" title="Clear Filters"><i class="bi bi-x-lg"></i></a>
+                {% endif %}
+            </div>
+        </form>
     </div>
 
     <!-- Document Table -->
     <div class="table-responsive">
-        <table class="table table-enterprise">
+        <table class="table table-enterprise align-middle mb-0">
             <thead>
                 <tr>
                     <th>Document Title</th>
                     <th>Category</th>
                     <th>Department</th>
-                    <th>Type</th>
+                    <th>Format</th>
                     <th>Size</th>
                     <th>Uploaded By</th>
                     <th>Archived Date</th>
@@ -48,25 +79,50 @@
                 <tr>
                     <td>
                         <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-file-earmark-pdf-fill text-danger fs-4"></i>
+                            {% if doc.file_type in ['pdf'] %}
+                                <i class="bi bi-file-earmark-pdf-fill text-danger fs-3"></i>
+                            {% elif doc.file_type in ['doc', 'docx'] %}
+                                <i class="bi bi-file-earmark-word-fill text-primary fs-3"></i>
+                            {% elif doc.file_type in ['xls', 'xlsx'] %}
+                                <i class="bi bi-file-earmark-excel-fill text-success fs-3"></i>
+                            {% elif doc.file_type in ['png', 'jpg', 'jpeg'] %}
+                                <i class="bi bi-file-earmark-image-fill text-info fs-3"></i>
+                            {% else %}
+                                <i class="bi bi-file-earmark-text-fill text-secondary fs-3"></i>
+                            {% endif %}
                             <div>
-                                <div class="fw-semibold">{{ doc.title }}</div>
-                                <small class="text-muted">{{ doc.description or 'Archived file' }}</small>
+                                <a href="{{ url_for('documents.view', doc_id=doc.id) }}" class="fw-semibold text-dark text-decoration-none hover-primary">
+                                    {{ doc.title }}
+                                </a>
+                                {% if doc.is_confidential %}
+                                <span class="badge bg-danger-subtle text-danger ms-1" style="font-size: 0.68rem;"><i class="bi bi-lock-fill me-1"></i>Confidential</span>
+                                {% endif %}
+                                <div class="text-muted small">{{ doc.description or 'Corporate document file' }}</div>
                             </div>
                         </div>
                     </td>
                     <td><span class="badge bg-light text-dark border">{{ doc.category.name if doc.category else 'General' }}</span></td>
-                    <td>{{ doc.department.name if doc.department else 'Company-Wide' }}</td>
-                    <td><code>{{ doc.file_type|upper }}</code></td>
-                    <td>{{ (doc.file_size / 1024)|int if doc.file_size else 1 }} KB</td>
-                    <td>{{ doc.uploaded_by.full_name if doc.uploaded_by else 'System' }}</td>
-                    <td>{{ doc.created_at.strftime('%b %d, %Y') }}</td>
+                    <td>
+                        {% if doc.department %}
+                        <span class="badge bg-secondary-subtle text-dark">{{ doc.department.code }}</span>
+                        {% else %}
+                        <span class="badge bg-light text-muted border">Company-Wide</span>
+                        {% endif %}
+                    </td>
+                    <td><code>{{ (doc.file_type or 'PDF')|upper }}</code></td>
+                    <td class="small">{{ (doc.file_size / 1024)|int if doc.file_size else 1 }} KB</td>
+                    <td class="small">{{ doc.uploaded_by.full_name if doc.uploaded_by else 'System' }}</td>
+                    <td class="small">{{ doc.created_at.strftime('%b %d, %Y') }}</td>
                     <td class="text-end">
                         <div class="btn-group btn-group-sm">
-                            <a href="{{ url_for('static', filename=doc.file_path) }}" class="btn btn-outline-primary" target="_blank" title="Download">
+                            <a href="{{ url_for('documents.view', doc_id=doc.id) }}" class="btn btn-outline-secondary" title="View Metadata">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{{ url_for('documents.download', doc_id=doc.id) }}" class="btn btn-outline-primary" title="Download Document">
                                 <i class="bi bi-download"></i>
                             </a>
-                            <a href="{{ url_for('documents.edit', doc_id=doc.id) }}" class="btn btn-outline-secondary" title="Edit Document">
+                            {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) or doc.uploaded_by_id == current_user.id %}
+                            <a href="{{ url_for('documents.edit', doc_id=doc.id) }}" class="btn btn-outline-secondary" title="Edit Metadata">
                                 <i class="bi bi-pencil"></i>
                             </a>
                             <form method="POST" action="{{ url_for('documents.delete', doc_id=doc.id) }}" class="d-inline confirm-delete-form" data-confirm-message="Soft delete document {{ doc.title }}?">
@@ -75,12 +131,16 @@
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="8" class="text-center text-muted py-5">No documents archived in repository.</td>
+                    <td colspan="8" class="text-center text-muted py-5">
+                        <i class="bi bi-folder-x fs-1 d-block mb-2 text-muted"></i>
+                        No documents matched your repository criteria.
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

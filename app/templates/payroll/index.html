@@ -1,56 +1,70 @@
 {% extends 'base.html' %}
 {% block title %}Payroll Management{% endblock %}
-{% block page_title %}Payroll & Compensation Administration{% endblock %}
+{% block page_title %}Payroll & HR Salary Management System{% endblock %}
 
 {% block content %}
+<!-- Top Header Actions -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h5 class="fw-bold mb-0 text-dark">Compensation & Salary Administration</h5>
+        <small class="text-muted">Generate batch or individual salary slips, manage allowances, deductions, and payment statuses</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('payroll.generate_individual') }}" class="btn btn-primary fw-semibold shadow-sm">
+            <i class="bi bi-person-plus-fill me-1"></i> Issue Individual Salary Slip
+        </a>
+        <a href="{{ url_for('payroll.create_bonus') }}" class="btn btn-outline-success">
+            <i class="bi bi-award me-1"></i> Record Bonus
+        </a>
+        <a href="{{ url_for('payroll.create_deduction') }}" class="btn btn-outline-danger">
+            <i class="bi bi-dash-circle me-1"></i> Record Deduction
+        </a>
+    </div>
+</div>
+
 <div class="row g-4 mb-4">
-    <!-- Generate Payroll Card -->
+    <!-- Generate Batch Payroll Card -->
     <div class="col-lg-4">
         <div class="card-enterprise h-100">
             <div class="card-header-enterprise">
                 <h6 class="card-title-enterprise"><i class="bi bi-calculator me-2 text-primary"></i>Batch Payroll Generator</h6>
             </div>
             <div class="p-4">
-                <p class="text-muted small">Executes salary formulas, attendance absence adjustments, and tax calculations for all active personnel.</p>
+                <p class="text-muted small">Executes salary formulas, attendance absence adjustments, and tax calculations for all active personnel company-wide.</p>
                 <form method="POST" action="{{ url_for('payroll.generate') }}">
                     {{ form.hidden_tag() }}
 
                     <div class="mb-3">
-                        <label class="form-label">Pay Period Month *</label>
+                        <label class="form-label fw-semibold">Pay Period Month *</label>
                         {{ form.month(class="form-select") }}
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label">Year *</label>
+                        <label class="form-label fw-semibold">Year *</label>
                         {{ form.year(class="form-control") }}
                     </div>
 
                     <button type="submit" class="btn btn-enterprise-primary w-100">
-                        <i class="bi bi-play-circle-fill me-1"></i> Calculate & Run Payroll
+                        <i class="bi bi-play-circle-fill me-1"></i> Calculate & Run Batch Payroll
                     </button>
                 </form>
 
-                <div class="pt-3 mt-3 border-top d-flex gap-2">
-                    <a href="{{ url_for('payroll.create_bonus') }}" class="btn btn-sm btn-outline-success flex-grow-1">
-                        <i class="bi bi-award me-1"></i> Record Bonus
-                    </a>
-                    <a href="{{ url_for('payroll.create_deduction') }}" class="btn btn-sm btn-outline-danger flex-grow-1">
-                        <i class="bi bi-dash-circle me-1"></i> Record Deduction
-                    </a>
+                <div class="alert alert-info py-2 px-3 small mt-3 mb-0">
+                    <i class="bi bi-info-circle me-1"></i> Duplicate prevention is enforced. If payroll for this month exists, existing records are preserved.
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Payroll History Table -->
+    <!-- Payroll History Batches -->
     <div class="col-lg-8">
         <div class="card-enterprise h-100">
-            <div class="card-header-enterprise">
-                <h6 class="card-title-enterprise"><i class="bi bi-cash-stack me-2 text-primary"></i>Processed Payroll Batches</h6>
-                <span class="badge bg-light text-dark border">{{ payrolls|length }} Runs</span>
+            <div class="card-header-enterprise d-flex justify-content-between align-items-center">
+                <h6 class="card-title-enterprise mb-0"><i class="bi bi-cash-stack me-2 text-primary"></i>Processed Payroll Batches</h6>
+                <span class="badge bg-light text-dark border">{{ payrolls|length }} Batches</span>
             </div>
             <div class="table-responsive">
-                <table class="table table-enterprise">
+                <table class="table table-enterprise mb-0">
                     <thead>
                         <tr>
                             <th>Batch Reference</th>
@@ -71,14 +85,16 @@
                                 </a>
                             </td>
                             <td>{{ p.month }}/{{ p.year }}</td>
-                            <td>${{ "{:,.2f}".format(p.total_amount) }}</td>
-                            <td class="text-danger">-${{ "{:,.2f}".format(p.total_deductions) }}</td>
-                            <td class="fw-bold text-success">${{ "{:,.2f}".format(p.net_amount) }}</td>
+                            <td>${{ "{:,.2f}".format(p.total_amount or 0) }}</td>
+                            <td class="text-danger">-${{ "{:,.2f}".format(p.total_deductions or 0) }}</td>
+                            <td class="fw-bold text-success">${{ "{:,.2f}".format(p.net_amount or 0) }}</td>
                             <td>
                                 {% if p.payroll_status == 'Paid' %}
                                     <span class="badge badge-soft-success">Paid</span>
+                                {% elif p.payroll_status == 'Pending' %}
+                                    <span class="badge badge-soft-warning">Pending</span>
                                 {% else %}
-                                    <span class="badge badge-soft-warning">Draft</span>
+                                    <span class="badge badge-soft-secondary">Draft</span>
                                 {% endif %}
                             </td>
                             <td class="text-end">
@@ -96,6 +112,144 @@
                 </table>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Master Employee Salary Records & Monthly Register -->
+<div class="card-enterprise">
+    <div class="card-header-enterprise d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h6 class="card-title-enterprise mb-0"><i class="bi bi-receipt-cutoff me-2 text-primary"></i>Master Employee Salary Records Register</h6>
+            <small class="text-muted">Month-by-month salary history across basic pay, allowances, overtime, deductions, and payment status</small>
+        </div>
+        <span class="badge bg-light text-dark border">{{ salary_slips|length }} Salary Records</span>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="p-3 bg-light border-bottom">
+        <form method="GET" action="{{ url_for('payroll.index') }}" class="row g-2 align-items-end">
+            <div class="col-md-2 col-6">
+                <label class="form-label small fw-semibold">Month</label>
+                <select name="month" class="form-select form-select-sm">
+                    <option value="">All Months</option>
+                    {% for m in range(1, 13) %}
+                        <option value="{{ m }}" {% if month_filter == m %}selected{% endif %}>Month {{ m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 col-6">
+                <label class="form-label small fw-semibold">Year</label>
+                <input type="number" name="year" class="form-control form-control-sm" placeholder="e.g. 2026" value="{{ year_filter or '' }}">
+            </div>
+            <div class="col-md-3 col-6">
+                <label class="form-label small fw-semibold">Payment Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All Statuses</option>
+                    <option value="Paid" {% if status_filter == 'Paid' %}selected{% endif %}>Paid</option>
+                    <option value="Pending" {% if status_filter == 'Pending' %}selected{% endif %}>Pending</option>
+                    <option value="Unpaid" {% if status_filter == 'Unpaid' %}selected{% endif %}>Unpaid</option>
+                </select>
+            </div>
+            <div class="col-md-3 col-6">
+                <label class="form-label small fw-semibold">Employee</label>
+                <select name="employee_id" class="form-select form-select-sm">
+                    <option value="">All Employees</option>
+                    {% for e in all_employees %}
+                        <option value="{{ e.id }}" {% if emp_filter == e.id %}selected{% endif %}>{{ e.emp_code }} - {{ e.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-1">
+                <button type="submit" class="btn btn-sm btn-primary flex-grow-1"><i class="bi bi-filter me-1"></i> Filter</button>
+                <a href="{{ url_for('payroll.index') }}" class="btn btn-sm btn-outline-secondary" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
+            </div>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-enterprise mb-0">
+            <thead>
+                <tr>
+                    <th>Ref #</th>
+                    <th>Employee</th>
+                    <th>Department</th>
+                    <th>Period</th>
+                    <th>Basic</th>
+                    <th>Allowances</th>
+                    <th>Bonuses</th>
+                    <th>Overtime</th>
+                    <th>Deductions</th>
+                    <th>Net Salary</th>
+                    <th>Status</th>
+                    <th class="text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for slip in salary_slips %}
+                <tr>
+                    <td><span class="badge bg-light text-dark border">#{{ slip.id }}</span></td>
+                    <td class="fw-semibold">
+                        <div>{{ slip.employee.full_name if slip.employee else 'Employee' }}</div>
+                        <small class="text-muted">{{ slip.employee.emp_code if slip.employee else 'N/A' }}</small>
+                    </td>
+                    <td><small class="badge bg-light text-secondary border">{{ slip.employee.department.name if slip.employee and slip.employee.department else 'General' }}</small></td>
+                    <td>{{ slip.payroll.month if slip.payroll else '--' }}/{{ slip.payroll.year if slip.payroll else '--' }}</td>
+                    <td>${{ "{:,.2f}".format(slip.basic or 0) }}</td>
+                    <td>${{ "{:,.2f}".format(slip.allowances or 0) }}</td>
+                    <td class="text-success">+${{ "{:,.2f}".format(slip.bonuses_total or 0) }}</td>
+                    <td>${{ "{:,.2f}".format(slip.overtime_amount or 0) }}</td>
+                    <td class="text-danger">-${{ "{:,.2f}".format(slip.deductions_total or 0) }}</td>
+                    <td class="fw-bold text-success">${{ "{:,.2f}".format(slip.net_salary or 0) }}</td>
+                    <td>
+                        <div class="dropdown d-inline">
+                            {% if slip.payment_status == 'Paid' %}
+                                <span class="badge badge-soft-success dropdown-toggle" role="button" data-bs-toggle="dropdown">Paid</span>
+                            {% elif slip.payment_status == 'Pending' %}
+                                <span class="badge badge-soft-warning dropdown-toggle" role="button" data-bs-toggle="dropdown">Pending</span>
+                            {% else %}
+                                <span class="badge badge-soft-secondary dropdown-toggle" role="button" data-bs-toggle="dropdown">Unpaid</span>
+                            {% endif %}
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                <li>
+                                    <form method="POST" action="{{ url_for('payroll.update_detail_status', detail_id=slip.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="status" value="Paid">
+                                        <button type="submit" class="dropdown-item small text-success"><i class="bi bi-check-circle me-1"></i> Mark Paid</button>
+                                    </form>
+                                </li>
+                                <li>
+                                    <form method="POST" action="{{ url_for('payroll.update_detail_status', detail_id=slip.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="status" value="Pending">
+                                        <button type="submit" class="dropdown-item small text-warning"><i class="bi bi-clock me-1"></i> Mark Pending</button>
+                                    </form>
+                                </li>
+                                <li>
+                                    <form method="POST" action="{{ url_for('payroll.update_detail_status', detail_id=slip.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="status" value="Unpaid">
+                                        <button type="submit" class="dropdown-item small text-secondary"><i class="bi bi-x-circle me-1"></i> Mark Unpaid</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </td>
+                    <td class="text-end">
+                        <a href="{{ url_for('payroll.view_payslip', detail_id=slip.id) }}" class="btn btn-sm btn-outline-primary" target="_blank" title="Print Salary Slip">
+                            <i class="bi bi-printer me-1"></i> Slip
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="12" class="text-center text-muted py-5">
+                        <i class="bi bi-receipt text-muted fs-2 d-block mb-2"></i>
+                        No salary records match the selected filter criteria.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}

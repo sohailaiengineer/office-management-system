@@ -497,8 +497,9 @@
                     <a href="{{ url_for('communication.notifications') }}" class="btn btn-sm btn-light border position-relative" title="Notifications">
                         <i class="bi bi-bell"></i>
                         {% if unread_notifications_count > 0 %}
-                            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
-                                <span class="visually-hidden">New alerts</span>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem;">
+                                {{ unread_notifications_count }}
+                                <span class="visually-hidden">unread alerts</span>
                             </span>
                         {% endif %}
                     </a>

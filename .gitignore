@@ -42,10 +42,16 @@ app/static/uploads/*
 !app/static/uploads/.gitkeep
 
 # IDEs and Editors
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 .idea/
 *.sublime-project
 *.sublime-workspace
+
+# Database dumps & local scratch
+backups/
+scratch/
 
 # Testing & Coverage
 .coverage

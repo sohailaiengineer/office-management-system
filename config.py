@@ -18,6 +18,8 @@ def _get_database_uri():
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'oms-super-secret-key-enterprise-2026')
     SQLALCHEMY_DATABASE_URI = _get_database_uri()
+
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
     

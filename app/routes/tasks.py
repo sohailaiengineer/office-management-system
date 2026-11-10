@@ -6,6 +6,8 @@ from app.models.project import Task, Project, TaskAssignment, TaskComment
 from app.models.employee import Employee
 from app.forms.project_forms import TaskForm, TaskCommentForm
 from app.services.audit_service import log_audit
+from app.services.email_service import send_task_assigned_email, send_task_updated_email
+from app.services.notification_service import create_system_notification
 from app.utils.decorators import login_required, get_current_user, get_user_role, get_managed_department
 
 tasks_bp = Blueprint('tasks', __name__, url_prefix='/tasks')
@@ -138,10 +140,11 @@ def create():
         db.session.flush()
 
         assigned_emp_id = form.assigned_employee_id.data
+        assigned_target_emp = None
         if assigned_emp_id and assigned_emp_id != 0:
+            assigned_target_emp = Employee.get_active_or_404(assigned_emp_id)
             if role == 'dept_manager':
-                target_emp = Employee.get_active_or_404(assigned_emp_id)
-                if target_emp.department_id != managed_dept.id:
+                if assigned_target_emp.department_id != managed_dept.id:
                     db.session.rollback()
                     flash('Unauthorized: Department Managers can only assign tasks to employees in their own department.', 'danger')
                     return redirect(url_for('tasks.create'))
@@ -156,6 +159,18 @@ def create():
             db.session.add(assignment)
 
         db.session.commit()
+
+        # Send Task Assignment Email & In-App Notification
+        if assigned_target_emp:
+            send_task_assigned_email(task, assigned_target_emp, assigner_name=user.full_name)
+            if assigned_target_emp.user_id:
+                create_system_notification(
+                    user_id=assigned_target_emp.user_id,
+                    title=f"New Task Assigned: {task.title}",
+                    message=f"You have been assigned deliverable '{task.title}' by {user.full_name}. Priority: {task.priority}.",
+                    notification_type="Task"
+                )
+
         log_audit('CREATE', 'tasks', task.id, None, {'title': task.title, 'project_id': task.project_id})
         flash(f'Task "{task.title}" created successfully.', 'success')
         return redirect(url_for('tasks.index'))
@@ -331,6 +346,19 @@ def edit(task_id):
 
         try:
             db.session.commit()
+
+            # Notify assigned employees
+            for assign in task.assignments:
+                if assign.employee:
+                    send_task_updated_email(task, assign.employee, updater_name=user.full_name)
+                    if assign.employee.user_id:
+                        create_system_notification(
+                            user_id=assign.employee.user_id,
+                            title=f"Task Updated: {task.title}",
+                            message=f"Deliverable '{task.title}' has been updated by {user.full_name}. Status: {task.task_status}.",
+                            notification_type="Task"
+                        )
+
             log_audit('UPDATE', 'tasks', task.id, old_val, {'title': task.title, 'status': task.task_status, 'priority': task.priority})
             flash(f'Task "{task.title}" updated successfully.', 'success')
             return redirect(url_for('tasks.view', task_id=task.id))

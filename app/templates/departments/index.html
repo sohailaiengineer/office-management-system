@@ -11,6 +11,9 @@
     </div>
     {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) or 'hr_manager' in session.get('roles', []) %}
     <div class="d-flex gap-2">
+        <a href="{{ url_for('departments.managers_overview') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-people-fill me-1"></i> Managers & Teams Overview
+        </a>
         <a href="{{ url_for('departments.create_designation') }}" class="btn btn-outline-primary btn-sm">
             <i class="bi bi-tag-fill me-1"></i> Add Designation
         </a>
@@ -45,7 +48,17 @@
                     {% endif %}
                 </div>
                 <h5 class="fw-bold mb-2">{{ dept.name }}</h5>
-                <p class="text-muted small mb-3">{{ dept.description or 'Operational unit.' }}</p>
+                <p class="text-muted small mb-2">{{ dept.description or 'Operational unit.' }}</p>
+                <div class="mb-3">
+                    <span class="text-muted small d-block" style="font-size: 0.72rem;">LEAD / MANAGER</span>
+                    {% if dept.manager and dept.manager.user %}
+                        <a href="{{ url_for('departments.manager_detail', manager_emp_id=dept.manager.id) }}" class="text-decoration-none fw-semibold text-primary small">
+                            <i class="bi bi-person-circle me-1"></i>{{ dept.manager.user.full_name }}
+                        </a>
+                    {% else %}
+                        <span class="text-muted small fst-italic">None Assigned</span>
+                    {% endif %}
+                </div>
             </div>
 
             <div class="pt-3 border-top d-flex justify-content-between align-items-center small">

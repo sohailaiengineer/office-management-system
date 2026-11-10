@@ -74,6 +74,38 @@ The system enforces strict multi-tier permissions through session-authenticated 
 
 ---
 
+## 2.1. Workplace Access Portal & Separate Department Logins
+
+The application features a modern enterprise **Workplace Access Portal** supporting centralized authentication alongside dedicated department workspaces with strict data isolation:
+
+- **Central Workplace Portal**: `/auth/login` (Unrestricted access for Super Admin and general organizational navigation)
+- **Engineering Division Portal**: `/auth/login/ENG`
+- **Human Resources Division Portal**: `/auth/login/HR`
+- **Finance & Accounts Division Portal**: `/auth/login/FIN`
+- **Marketing & Sales Division Portal**: `/auth/login/MKT`
+
+### Security Enforcement:
+- Each department portal clearly displays the division branding and role context.
+- Department employees are restricted strictly to their assigned division portal and cannot access other departments' confidential information.
+- Super Admin retains unrestricted cross-department administrative access.
+- Account password field includes interactive Show/Hide visibility toggles and device persistence ("Remember My Device").
+- Cryptographic password recovery via `/auth/forgot-password` and time-limited token activation via `/auth/activate/<token>`.
+
+---
+
+## 2.2. Automated Employee Account Creation & Activation Workflow
+
+When an HR Manager or Administrator onboards a new staff member via `/employees/create`:
+1. **Unified Registration**: Admin/HR enters employee identity details, organizational placement, reporting manager, job designation, joining date, and assigns their system role.
+2. **Automated User Provisioning**: The backend automatically provisions a corresponding `User` account linked to the `Employee` entity with password hashing (PBKDF2 with SHA-256).
+3. **Cryptographic Activation Token**: The system generates a secure, time-limited activation token (valid for 7 days) using `itsdangerous.URLSafeTimedSerializer`.
+4. **Automated Welcome Email & Notification**: A professional onboarding email is dispatched containing full employment specs and the direct activation link (`/auth/activate/<token>`), accompanied by an in-app system notification.
+5. **First-Login Activation**: The employee visits the activation link, enters their private password, and their account status is marked as `Active`.
+6. **Editing Safety**: Updates to existing employees via `/employees/<id>/edit` modify the linked user without creating duplicate user accounts or orphaned credentials.
+7. **Interactive Deletion Modal**: Staff records are safely soft-deleted using a confirmation modal, preserving historical attendance and payroll integrity while retiring active login credentials into the Recycle Bin.
+
+---
+
 ## 3. Database Architecture & 68 Normalized Tables
 
 The database is structured into **68 relational tables** conforming to 3NF (Third Normal Form) without synthetic redundancy:
@@ -441,49 +473,87 @@ Total relational tables verified in oms_db: 68 tables.
 ======================================================================
 ```
 
-### Step 5: Start the Development Server
+### Step 5: VS Code Database Extension Configuration (SQLTools)
+The workspace is pre-configured with VS Code database settings in `.vscode/settings.json` and `.vscode/extensions.json`.
+
+1. Open the **Extensions** view (`Ctrl+Shift+X`) in VS Code and install:
+   - **SQLTools** (`mtxr.sqltools`)
+   - **SQLTools MySQL/MariaDB driver** (`mtxr.sqltools-driver-mysql`)
+2. Open the **SQLTools** icon on the VS Code Activity Bar.
+3. Click on the pre-configured connection **"OMS MySQL (DBngin)"** (Connecting to `localhost:3306`, user `root`, database `oms_db`).
+4. Browse all 68 normalized tables, columns, indexes, and execute SQL queries directly from your editor.
+
+### Step 6: Database Backup & Restoration
+
+A full SQL dump of the database with all 68 tables is maintained in the `backups/` directory:
 ```bash
+# Export / Backup database to SQL dump
+"C:\Program Files\MariaDB 13.0\bin\mysqldump.exe" -u root -h localhost -P 3306 --databases oms_db > backups\oms_db_backup.sql
+
+# Restore database from backup
+mysql -u root -h localhost -P 3306 oms_db < backups\oms_db_backup.sql
+```
+
+### Step 7: Start the Development Server
+```bash
+# Activate virtual environment
+.\venv\Scripts\Activate.ps1
+
+# Start the Flask application
 python run.py
 ```
 Open your web browser and navigate to:  
-**`http://127.0.0.1:5000/auth/login`**
+**`http://127.0.0.1:5001/auth/login`**
 
 ---
 
 ## 9. Automated Testing & Quality Assurance
 
-The system includes automated unit and integration tests covering authentication, route status codes, soft-deletion mechanics, recycle bin recovery, and report exports:
+The system includes 33 comprehensive automated unit and integration tests covering authentication, route status codes, soft-deletion mechanics, recycle bin recovery, role-based dashboards, report exports, salary privacy, and department isolation:
 
 ```bash
-# Run test suite via test_app.py
-python test_app.py
-
-# Or via unittest module
-python -m unittest tests/test_oms.py
+# Run test suite via unittest module
+.\venv\Scripts\python.exe -m unittest tests/test_oms.py
 ```
 
-*Test Results Verification (17 Core Enterprise Suites):*
+*Test Results Verification (33 Comprehensive Enterprise Suites — 100% Passing):*
 ```
-Ran 17 tests in ~19.2s
+Ran 33 tests in ~21.2s
 
 OK
-✓ Test 1: Verified all 68 relational tables in MySQL (68 core models).
-✓ Test 2: Authentication, Session Management & Password Security verified.
-✓ Test 3: Role-Based Access Control (RBAC) for Admin, Manager, HR, and Employee verified.
-✓ Test 4: All 17 Blueprints verified with 200 OK status.
-✓ Test 5: Complete Employee CRUD and Soft Deletion verified.
-✓ Test 6: Departments and Designations Full CRUD verified.
-✓ Test 7: Attendance and Shift Policy Management verified.
-✓ Test 8: Leave Application, Validation and Cancellation Workflow verified.
-✓ Test 9: Payroll Bonuses and Deductions Operations verified.
-✓ Test 10: Projects and Sprint Tasks Complete Lifecycle verified.
-✓ Test 11: Corporate Client CRM Full CRUD & Interaction verified.
-✓ Test 12: Asset Inventory Management Full CRUD verified.
-✓ Test 13: Corporate Document Repository Full CRUD verified.
-✓ Test 14: Internal Communication Broadcasts & Direct Messaging verified.
-✓ Test 15: Reports Catalog (47 reports) and live CSV & Excel (.xlsx) exports verified.
-✓ Test 16: System Settings, Audit Logging, and User Governance verified.
-✓ Test 17: Recycle Bin Cross-Module Restoration verified.
+[OK] Test 1: Verified all 68 relational tables in MySQL (68 core models).
+[OK] Test 2: Authentication, Session Management & Password Security verified.
+[OK] Test 3: Role-Based Access Control (RBAC) for Admin, Manager, HR, and Employee verified.
+[OK] Test 4: All 17 Blueprints verified with 200 OK status.
+[OK] Test 5: Complete Employee CRUD and Soft Deletion verified.
+[OK] Test 6: Departments and Designations Full CRUD verified.
+[OK] Test 7: Attendance and Shift Policy Management verified.
+[OK] Test 8: Leave Application, Validation and Cancellation Workflow verified.
+[OK] Test 9: Payroll Bonuses and Deductions Operations verified.
+[OK] Test 10: Projects and Sprint Tasks Complete Lifecycle verified.
+[OK] Test 11: Corporate Client CRM Full CRUD & Interaction verified.
+[OK] Test 12: Asset Inventory Management Full CRUD verified.
+[OK] Test 13: Corporate Document Repository Full CRUD verified.
+[OK] Test 14: Internal Communication Broadcasts & Direct Messaging verified.
+[OK] Test 15: Reports Catalog (47 reports) and live CSV & Excel (.xlsx) exports verified.
+[OK] Test 16: System Settings, Audit Logging, and User Governance verified.
+[OK] Test 17: Recycle Bin Cross-Module Restoration verified.
+[OK] Test 18: All 4 Distinct Role-Specific Dashboards verified.
+[OK] Test 19: Strict Role Data Scoping & Salary Privacy verified.
+[OK] Test 20: Task Assignment and Progress Update Workflow verified.
+[OK] Test 21: Reports Catalog Role Scoping & 403 Protection verified.
+[OK] Test 22: All 12 Interactive Dashboard Card Filter Routes verified.
+[OK] Test 23: Department Manager A vs Manager B Strict Isolation verified.
+[OK] Test 24: Employee A vs Employee B Privacy and RBAC verified.
+[OK] Test 25: Leave Submission with Attachment & Notifications (No 500 Error) verified.
+[OK] Test 26: Messaging Recipient Selection, Attachment & Privacy Protection verified.
+[OK] Test 27: Document Management Filters & Password Reset Workflow verified.
+[OK] Test 28: Employee Salary Slip Access & HTTP 500 Elimination verified.
+[OK] Test 29: HR Salary Management, Automatic Net Pay & Duplicate Prevention verified.
+[OK] Test 30: Separate Department Logins, Portal Restriction & Super Admin Access verified.
+[OK] Test 31: Cross-Department Data Privacy & Anti-Tampering URL RBAC verified.
+[OK] Test 32: Employee Creation, Auto-Provisioning & Filtering verified.
+[OK] Test 33: Account Activation & Strict Salary Privacy verified.
 ```
 
 ---

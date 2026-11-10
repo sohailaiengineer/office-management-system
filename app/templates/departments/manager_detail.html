@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% block title %}Department Manager Dossier — {{ manager.user.full_name }}{% endblock %}
+{% block page_title %}Department Manager & Team Dossier{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h5 class="fw-bold mb-1"><i class="bi bi-person-workspace text-primary me-2"></i>{{ manager.user.full_name }} — Team Management</h5>
+        <p class="text-muted small mb-0">{{ dept.name if dept else 'Department' }} &bull; Operational scope, reporting hierarchy, projects, and active tasks.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('departments.managers_overview') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Back to Overview
+        </a>
+        {% if session.get('is_admin') or 'super_admin' in session.get('roles', []) %}
+        <a href="{{ url_for('employees.view', emp_id=manager.id) }}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-person-lines-fill me-1"></i> Full Employee Profile
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Manager Profile & Dept Summary Banner -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-4">
+        <div class="card-enterprise p-4 text-center h-100">
+            <div class="rounded-circle bg-primary text-white mx-auto d-flex align-items-center justify-content-center fw-bold shadow-sm mb-3" style="width: 80px; height: 80px; font-size: 2rem;">
+                {{ manager.user.first_name[0] }}{{ manager.user.last_name[0] }}
+            </div>
+            <h5 class="fw-bold mb-1">{{ manager.user.full_name }}</h5>
+            <span class="badge bg-primary-subtle text-primary mb-3">{{ manager.designation.title if manager.designation else 'Department Manager' }}</span>
+            <div class="text-start small border-top pt-3">
+                <div class="mb-2"><span class="text-muted">Employee Code:</span> <strong>{{ manager.emp_code }}</strong></div>
+                <div class="mb-2"><span class="text-muted">Email:</span> <strong>{{ manager.user.email }}</strong></div>
+                <div class="mb-2"><span class="text-muted">Phone:</span> <strong>{{ manager.user.phone or 'N/A' }}</strong></div>
+                <div class="mb-2"><span class="text-muted">Department:</span> <strong>{{ dept.name if dept else 'N/A' }} ({{ dept.code if dept else 'N/A' }})</strong></div>
+                <div class="mb-2"><span class="text-muted">Joining Date:</span> <strong>{{ manager.date_of_joining.strftime('%b %d, %Y') if manager.date_of_joining else 'N/A' }}</strong></div>
+                <div><span class="text-muted">Annual Budget:</span> <strong class="text-success">${{ "{:,.0f}".format(dept.budget) if dept and dept.budget else '0' }}</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Metrics and Bio -->
+    <div class="col-lg-8">
+        <div class="card-enterprise p-4 h-100">
+            <h6 class="fw-bold text-dark border-bottom pb-2 mb-3"><i class="bi bi-bar-chart-fill text-primary me-2"></i>Departmental Performance & Workload</h6>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="p-3 bg-light rounded text-center border">
+                        <span class="text-muted small d-block">Supervised Team</span>
+                        <span class="fs-4 fw-bold text-dark">{{ team_members|length }} Staff</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-light rounded text-center border">
+                        <span class="text-muted small d-block">Department Projects</span>
+                        <span class="fs-4 fw-bold text-primary">{{ projects|length }} Projects</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 bg-light rounded text-center border">
+                        <span class="text-muted small d-block">Open Work Tasks</span>
+                        <span class="fs-4 fw-bold text-warning">{{ tasks|length }} Tasks</span>
+                    </div>
+                </div>
+            </div>
+
+            <h6 class="fw-bold text-dark mb-2">Scope & Department Description</h6>
+            <p class="text-muted small mb-0">{{ dept.description if dept and dept.description else 'Leading operations, resource allocation, and project deadlines for this business unit.' }}</p>
+        </div>
+    </div>
+</div>
+
+<!-- Team Members Roster -->
+<div class="card-enterprise mb-4">
+    <div class="card-header-enterprise">
+        <h6 class="card-title-enterprise"><i class="bi bi-people-fill me-2 text-primary"></i>Supervised Team Members</h6>
+        <span class="badge bg-light text-dark border">{{ team_members|length }} Members</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-enterprise mb-0">
+            <thead>
+                <tr>
+                    <th>Emp Code</th>
+                    <th>Name</th>
+                    <th>Designation</th>
+                    <th>Employment Type</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if team_members %}
+                    {% for emp in team_members %}
+                    <tr>
+                        <td><code>{{ emp.emp_code }}</code></td>
+                        <td class="fw-semibold">{{ emp.user.full_name }}</td>
+                        <td>{{ emp.designation.title if emp.designation else 'Staff' }}</td>
+                        <td><span class="badge badge-soft-info">{{ emp.employment_type }}</span></td>
+                        <td>{{ emp.user.email }}</td>
+                        <td>
+                            <span class="badge {% if emp.status == 'Active' %}badge-soft-success{% else %}badge-soft-danger{% endif %}">
+                                {{ emp.status }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('employees.view', emp_id=emp.id) }}" class="btn btn-sm btn-outline-secondary py-0 px-2" title="View Profile">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">No team members currently report directly to this manager.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Active Projects & Assigned Tasks -->
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise">
+                <h6 class="card-title-enterprise"><i class="bi bi-folder-fill me-2 text-primary"></i>Departmental Projects</h6>
+                <span class="badge bg-light text-dark border">{{ projects|length }}</span>
+            </div>
+            <div class="p-3">
+                {% if projects %}
+                <div class="list-group list-group-flush">
+                    {% for p in projects %}
+                    <div class="list-group-item px-1 py-3 border-bottom">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="badge bg-secondary-subtle text-dark">{{ p.code }}</span>
+                            <span class="badge {% if p.project_status == 'In-Progress' %}badge-soft-info{% elif p.project_status == 'Completed' %}badge-soft-success{% else %}badge-soft-warning{% endif %}">
+                                {{ p.project_status }}
+                            </span>
+                        </div>
+                        <h6 class="fw-bold mb-1">{{ p.name }}</h6>
+                        <div class="d-flex justify-content-between small text-muted mb-2">
+                            <span>Deadline: {{ p.deadline.strftime('%b %d, %Y') if p.deadline else 'None' }}</span>
+                            <span>Progress: {{ p.progress }}%</span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ p.progress }}%;"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted small">No active projects logged for this department.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card-enterprise h-100">
+            <div class="card-header-enterprise">
+                <h6 class="card-title-enterprise"><i class="bi bi-check2-square me-2 text-primary"></i>Recent Team Tasks</h6>
+                <span class="badge bg-light text-dark border">{{ tasks|length }}</span>
+            </div>
+            <div class="p-3">
+                {% if tasks %}
+                <div class="list-group list-group-flush">
+                    {% for t in tasks[:6] %}
+                    <div class="list-group-item px-1 py-2 border-bottom d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-semibold text-dark">{{ t.title }}</div>
+                            <small class="text-muted">Due: {{ t.due_date.strftime('%b %d, %Y') if t.due_date else 'Flexible' }} &bull; Priority: {{ t.priority }}</small>
+                        </div>
+                        <span class="badge {% if t.task_status == 'Completed' %}badge-soft-success{% elif t.task_status == 'In-Progress' %}badge-soft-info{% else %}badge-soft-warning{% endif %}">
+                            {{ t.task_status }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted small">No pending tasks for this department.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

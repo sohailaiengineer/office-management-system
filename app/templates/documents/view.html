@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Document Metadata — {{ document.title }}{% endblock %}
+{% block page_title %}Document Details & Version History{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h5 class="fw-bold mb-1"><i class="bi bi-file-earmark-text-fill text-primary me-2"></i>{{ document.title }}</h5>
+        <small class="text-muted">Repository metadata, security classification, and historical revision logs</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('documents.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Back to Repository
+        </a>
+        <a href="{{ url_for('documents.download', doc_id=document.id) }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-download me-1"></i> Download File
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <!-- Metadata Overview Card -->
+        <div class="card-enterprise shadow-sm p-4 h-100">
+            <h6 class="fw-bold text-dark border-bottom pb-2 mb-3"><i class="bi bi-info-circle text-primary me-2"></i>File Attributes</h6>
+            <div class="mb-3">
+                <span class="text-muted small d-block">Document Title</span>
+                <span class="fw-bold text-dark fs-6">{{ document.title }}</span>
+            </div>
+            <div class="mb-3">
+                <span class="text-muted small d-block">Category</span>
+                <span class="badge bg-light text-dark border">{{ document.category.name if document.category else 'General' }}</span>
+            </div>
+            <div class="mb-3">
+                <span class="text-muted small d-block">Department Scope</span>
+                <span class="fw-semibold">{{ document.department.name if document.department else 'Company-Wide / All Departments' }}</span>
+            </div>
+            <div class="mb-3">
+                <span class="text-muted small d-block">Security Classification</span>
+                {% if document.is_confidential %}
+                    <span class="badge bg-danger-subtle text-danger"><i class="bi bi-shield-lock-fill me-1"></i>Confidential — Restricted Access</span>
+                {% else %}
+                    <span class="badge bg-success-subtle text-success"><i class="bi bi-shield-check me-1"></i>Public Corporate Record</span>
+                {% endif %}
+            </div>
+            <div class="row g-2 mb-3 border-top pt-3">
+                <div class="col-6">
+                    <span class="text-muted small d-block">File Format</span>
+                    <code>{{ (document.file_type or 'PDF')|upper }}</code>
+                </div>
+                <div class="col-6">
+                    <span class="text-muted small d-block">File Size</span>
+                    <span class="fw-semibold">{{ (document.file_size / 1024)|int if document.file_size else 1 }} KB</span>
+                </div>
+            </div>
+            <div class="border-top pt-3">
+                <span class="text-muted small d-block">Uploaded By</span>
+                <div class="fw-semibold text-dark">{{ document.uploaded_by.full_name if document.uploaded_by else 'Administrator' }}</div>
+                <small class="text-muted">{{ document.created_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <!-- Scope Description & Version History -->
+        <div class="card-enterprise shadow-sm p-4 h-100">
+            <h6 class="fw-bold text-dark border-bottom pb-2 mb-3"><i class="bi bi-card-text text-primary me-2"></i>Summary & Scope</h6>
+            <p class="text-secondary mb-4">{{ document.description or 'No extra summary provided for this document.' }}</p>
+
+            <h6 class="fw-bold text-dark border-bottom pb-2 mb-3"><i class="bi bi-clock-history text-primary me-2"></i>Version History & Audit Log</h6>
+            {% if document.versions %}
+            <div class="list-group list-group-flush border rounded">
+                {% for v in document.versions %}
+                <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                    <div>
+                        <span class="badge bg-primary me-2">v{{ v.version_number }}</span>
+                        <span class="fw-semibold small text-dark">{{ v.change_summary or 'Revision upload' }}</span>
+                        <div class="text-muted" style="font-size: 0.72rem;">Uploaded by {{ v.uploaded_by.full_name if v.uploaded_by else 'Admin' }} &bull; {{ v.created_at.strftime('%b %d, %Y') }}</div>
+                    </div>
+                    <a href="{{ url_for('documents.download', doc_id=document.id) }}" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Download this version">
+                        <i class="bi bi-download"></i>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted small fst-italic">No prior revisions recorded.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -7,7 +7,7 @@
     <div class="card-header-enterprise">
         <div>
             <h6 class="card-title-enterprise"><i class="bi bi-pencil-square me-2 text-primary"></i>Edit Employee Record &bull; {{ employee.emp_code }}</h6>
-            <small class="text-muted">Modify organizational placement, compensation, and personal records</small>
+            <small class="text-muted">Modify organizational placement, role permissions, and personal records</small>
         </div>
         <a href="{{ url_for('employees.view', emp_id=employee.id) }}" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i> Back to View
@@ -18,17 +18,19 @@
         <form method="POST" action="{{ url_for('employees.edit', emp_id=employee.id) }}">
             {{ form.hidden_tag() }}
 
-            <!-- Section 1: User Identity -->
-            <div class="border-bottom pb-3 mb-4">
-                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-person me-2"></i>1. User Identity & Contact</h6>
+            <!-- Section 1: User Identity & Account -->
+            <div class="border-bottom pb-4 mb-4">
+                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-shield-lock me-2"></i>1. User Identity & Account Settings</h6>
                 <div class="row g-3">
                     <div class="col-md-3">
                         <label class="form-label">First Name *</label>
                         {{ form.first_name(class="form-control") }}
+                        {% for err in form.first_name.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Last Name *</label>
                         {{ form.last_name(class="form-control") }}
+                        {% for err in form.last_name.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Username</label>
@@ -38,16 +40,32 @@
                     <div class="col-md-3">
                         <label class="form-label">Email Address *</label>
                         {{ form.email(class="form-control") }}
+                        {% for err in form.email.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Phone Number</label>
+                        {{ form.phone(class="form-control") }}
+                        {% for err in form.phone.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">System Role *</label>
+                        {{ form.role_id(class="form-select") }}
+                        {% for err in form.role_id.errors %}<div class="text-danger small">{{ err }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Reset Password (Optional)</label>
+                        {{ form.password(class="form-control", placeholder="Leave blank to retain password") }}
+                        <small class="text-muted d-block mt-1">Enter only if changing user's password.</small>
                     </div>
                 </div>
             </div>
 
             <!-- Section 2: Employment Details -->
-            <div class="border-bottom pb-3 mb-4">
-                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-briefcase me-2"></i>2. Job Designation & Status</h6>
+            <div class="border-bottom pb-4 mb-4">
+                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-briefcase me-2"></i>2. Job Designation & Organizational Unit</h6>
                 <div class="row g-3">
                     <div class="col-md-3">
-                        <label class="form-label">Employee Code</label>
+                        <label class="form-label">Employee ID (Code)</label>
                         <input type="text" class="form-control bg-light" value="{{ employee.emp_code }}" readonly disabled>
                         <input type="hidden" name="emp_code" value="{{ employee.emp_code }}">
                     </div>
@@ -60,7 +78,7 @@
                         {{ form.designation_id(class="form-select") }}
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Reporting Manager</label>
+                        <label class="form-label">Assigned Department Manager</label>
                         {{ form.manager_id(class="form-select") }}
                     </div>
                     <div class="col-md-3">
@@ -68,15 +86,15 @@
                         {{ form.employment_type(class="form-select") }}
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Date of Joining *</label>
+                        <label class="form-label">Joining Date *</label>
                         {{ form.date_of_joining(class="form-control", type="date") }}
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Basic Salary ($) *</label>
+                        <label class="form-label">Basic Monthly Salary ($) *</label>
                         {{ form.basic_salary(class="form-control") }}
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Status</label>
+                        <label class="form-label">Employment Status</label>
                         {{ form.status(class="form-select") }}
                     </div>
                 </div>
@@ -84,7 +102,7 @@
 
             <!-- Section 3: Profile Details -->
             <div class="pb-3 mb-4">
-                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-card-text me-2"></i>3. Personal Background</h6>
+                <h6 class="fw-bold text-primary mb-3"><i class="bi bi-person-vcard me-2"></i>3. Personal Background & Dossier</h6>
                 <div class="row g-3">
                     <div class="col-md-3">
                         <label class="form-label">Gender</label>
@@ -120,7 +138,7 @@
             <div class="d-flex justify-content-end gap-2 pt-3 border-top">
                 <a href="{{ url_for('employees.view', emp_id=employee.id) }}" class="btn btn-outline-secondary">Cancel</a>
                 <button type="submit" class="btn btn-primary fw-semibold">
-                    <i class="bi bi-check2 me-1"></i> Update Employee
+                    <i class="bi bi-check2 me-1"></i> Update Employee Record
                 </button>
             </div>
         </form>

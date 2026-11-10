@@ -1,0 +1,17 @@
+{
+    "python.defaultInterpreterPath": "D:\\sites\\office_management_system\\venv\\Scripts\\python.exe",
+    "python.terminal.activateEnvironment": true,
+    "python.analysis.typeCheckingMode": "basic",
+    "sqltools.connections": [
+        {
+            "name": "OMS MySQL (DBngin)",
+            "driver": "MySQL",
+            "server": "localhost",
+            "port": 3306,
+            "database": "oms_db",
+            "username": "root",
+            "askForPassword": false
+        }
+    ]
+}
+

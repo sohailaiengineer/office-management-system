@@ -25,118 +25,198 @@
     </div>
 </div>
 
-<!-- Super Admin KPI Metrics Row (8 Core Cards) -->
+<!-- Super Admin 12 Interactive KPI Dashboard Cards -->
 <div class="row g-3 mb-4">
     <!-- 1. Total Employees -->
-    <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap bg-primary-subtle text-primary">
-                <i class="bi bi-people-fill"></i>
+    <div class="col-xl-3 col-md-4 col-sm-6">
+        <a href="{{ url_for('employees.index') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-primary-subtle text-primary">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Total Employees</div>
+                    <div class="kpi-value">{{ total_employees }}</div>
+                    <small class="text-success"><i class="bi bi-check-circle me-1"></i>{{ active_employees }} Active</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">Total Employees</div>
-                <div class="kpi-value">{{ total_employees }}</div>
-                <small class="text-success"><i class="bi bi-check-circle me-1"></i>{{ active_employees }} Active</small>
-            </div>
-        </div>
+        </a>
     </div>
 
-    <!-- 2. Departments -->
-    <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap bg-info-subtle text-info">
-                <i class="bi bi-diagram-3-fill"></i>
+    <!-- 2. Total Departments -->
+    <div class="col-xl-3 col-md-4 col-sm-6">
+        <a href="{{ url_for('departments.index') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-info-subtle text-info">
+                    <i class="bi bi-diagram-3-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Total Departments</div>
+                    <div class="kpi-value">{{ total_departments }}</div>
+                    <small class="text-muted"><i class="bi bi-building me-1"></i>Divisions & Units</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">Departments</div>
-                <div class="kpi-value">{{ total_departments }}</div>
-                <small class="text-muted">Organizational Units</small>
-            </div>
-        </div>
+        </a>
     </div>
 
-    <!-- 3. Today's Attendance -->
-    <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap bg-success-subtle text-success">
-                <i class="bi bi-person-check-fill"></i>
+    <!-- 3. Total Managers -->
+    <div class="col-xl-3 col-md-4 col-sm-6">
+        <a href="{{ url_for('departments.managers_overview') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-primary-subtle text-indigo" style="color: #4f46e5; background-color: #e0e7ff;">
+                    <i class="bi bi-person-workspace"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Total Managers</div>
+                    <div class="kpi-value">{{ total_managers }}</div>
+                    <small class="text-indigo" style="color: #4f46e5;"><i class="bi bi-award-fill me-1"></i>Team Leaders</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">Today's Attendance</div>
-                <div class="kpi-value">{{ today_attendance_count }}</div>
-                <small class="text-muted">{{ att_late }} Late &bull; {{ att_absent }} Absent</small>
-            </div>
-        </div>
+        </a>
     </div>
 
-    <!-- 4. Pending Leaves -->
-    <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap bg-warning-subtle text-warning">
-                <i class="bi bi-calendar-event-fill"></i>
+    <!-- 4. Present Employees -->
+    <div class="col-xl-3 col-md-4 col-sm-6">
+        <a href="{{ url_for('attendance.index', status='Present') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-success-subtle text-success">
+                    <i class="bi bi-person-check-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Present Employees</div>
+                    <div class="kpi-value text-success">{{ att_present }}</div>
+                    <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ att_late }} Checked-in Late</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">Pending Leaves</div>
-                <div class="kpi-value">{{ pending_leaves }}</div>
-                <small class="text-warning"><i class="bi bi-clock-history me-1"></i>Awaiting Approval</small>
-            </div>
-        </div>
+        </a>
     </div>
 
-    <!-- 5. Monthly Payroll -->
-    <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap" style="background-color: #f3e8ff; color: #7e22ce;">
-                <i class="bi bi-cash-stack"></i>
+    <!-- 5. Absent Employees -->
+    <div class="col-xl-3 col-md-4 col-sm-6">
+        <a href="{{ url_for('attendance.index', status='Absent') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-danger-subtle text-danger">
+                    <i class="bi bi-person-x-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Absent Employees</div>
+                    <div class="kpi-value text-danger">{{ att_absent }}</div>
+                    <small class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Unrecorded Today</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">Monthly Payroll</div>
-                <div class="kpi-value">${{ "{:,.0f}".format(monthly_payroll_amount) }}</div>
-                <small class="text-muted">Net Monthly Run</small>
-            </div>
-        </div>
+        </a>
     </div>
 
-    <!-- 6. Active Projects -->
-    <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap bg-primary-subtle text-primary">
-                <i class="bi bi-kanban-fill"></i>
+    <!-- 6. Pending Leave Requests -->
+    <div class="col-xl-3 col-md-4 col-sm-6">
+        <a href="{{ url_for('leaves.index', status='Pending') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-warning-subtle text-warning">
+                    <i class="bi bi-calendar-event-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Pending Leaves</div>
+                    <div class="kpi-value text-warning">{{ pending_leaves }}</div>
+                    <small class="text-warning"><i class="bi bi-hourglass-split me-1"></i>Awaiting Approval</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">Active Projects</div>
-                <div class="kpi-value">{{ active_projects }}</div>
-                <small class="text-primary"><i class="bi bi-activity me-1"></i>Portfolio Execution</small>
-            </div>
-        </div>
+        </a>
     </div>
 
-    <!-- 7. Pending Tasks -->
-    <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap bg-danger-subtle text-danger">
-                <i class="bi bi-list-check"></i>
+    <!-- 7. Approved Leaves -->
+    <div class="col-xl-3 col-md-4 col-sm-6">
+        <a href="{{ url_for('leaves.index', status='Approved') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-success-subtle text-success">
+                    <i class="bi bi-calendar-check-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Approved Leaves</div>
+                    <div class="kpi-value text-success">{{ approved_leaves }}</div>
+                    <small class="text-success"><i class="bi bi-check2-circle me-1"></i>Authorized Requests</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">Pending Tasks</div>
-                <div class="kpi-value">{{ pending_tasks }}</div>
-                <small class="text-success">{{ completed_tasks }} Completed</small>
-            </div>
-        </div>
+        </a>
     </div>
 
-    <!-- 8. Corporate Clients -->
-    <div class="col-xl-3 col-sm-6">
-        <div class="kpi-card">
-            <div class="kpi-icon-wrap bg-secondary-subtle text-secondary">
-                <i class="bi bi-briefcase-fill"></i>
+    <!-- 8. Rejected Leaves -->
+    <div class="col-xl-3 col-md-4 col-sm-6">
+        <a href="{{ url_for('leaves.index', status='Rejected') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-secondary-subtle text-secondary">
+                    <i class="bi bi-calendar-x-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Rejected Leaves</div>
+                    <div class="kpi-value text-secondary">{{ rejected_leaves }}</div>
+                    <small class="text-muted"><i class="bi bi-x-circle me-1"></i>Declined Requests</small>
+                </div>
             </div>
-            <div>
-                <div class="kpi-title">Corporate Clients</div>
-                <div class="kpi-value">{{ total_clients }}</div>
-                <small class="text-muted">Active Client CRM</small>
+        </a>
+    </div>
+
+    <!-- 9. Total Tasks -->
+    <div class="col-xl-3 col-md-4 col-sm-6">
+        <a href="{{ url_for('tasks.index') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-primary-subtle text-primary">
+                    <i class="bi bi-kanban-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Total Tasks</div>
+                    <div class="kpi-value">{{ total_tasks }}</div>
+                    <small class="text-primary"><i class="bi bi-list-task me-1"></i>Company Taskboard</small>
+                </div>
             </div>
-        </div>
+        </a>
+    </div>
+
+    <!-- 10. Pending Tasks -->
+    <div class="col-xl-3 col-md-4 col-sm-6">
+        <a href="{{ url_for('tasks.index', status='Pending') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-warning-subtle text-warning">
+                    <i class="bi bi-list-check"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Pending Tasks</div>
+                    <div class="kpi-value text-warning">{{ pending_tasks }}</div>
+                    <small class="text-warning"><i class="bi bi-clock-history me-1"></i>Open & In-Progress</small>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- 11. Completed Tasks -->
+    <div class="col-xl-3 col-md-4 col-sm-6">
+        <a href="{{ url_for('tasks.index', status='Completed') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap bg-success-subtle text-success">
+                    <i class="bi bi-check2-all"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Completed Tasks</div>
+                    <div class="kpi-value text-success">{{ completed_tasks }}</div>
+                    <small class="text-success"><i class="bi bi-trophy-fill me-1"></i>Milestones Delivered</small>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- 12. Payroll Records -->
+    <div class="col-xl-3 col-md-4 col-sm-6">
+        <a href="{{ url_for('payroll.index') }}" class="text-decoration-none text-reset">
+            <div class="kpi-card shadow-sm h-100 transition-hover">
+                <div class="kpi-icon-wrap" style="background-color: #f3e8ff; color: #7e22ce;">
+                    <i class="bi bi-cash-stack"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Payroll Records</div>
+                    <div class="kpi-value" style="color: #7e22ce;">{{ payroll_records_count }}</div>
+                    <small class="text-muted"><i class="bi bi-wallet2 me-1"></i>${{ "{:,.0f}".format(monthly_payroll_amount) }} Net Monthly</small>
+                </div>
+            </div>
+        </a>
     </div>
 </div>
 
@@ -184,6 +264,96 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Managers & Teams Overview Section -->
+<div class="card-enterprise mb-4">
+    <div class="card-header-enterprise d-flex justify-content-between align-items-center">
+        <div>
+            <h6 class="mb-0 fw-bold"><i class="bi bi-people-fill me-2 text-primary"></i>Department Managers & Teams Overview</h6>
+            <small class="text-muted">Directorial oversight of assigned department leaders, active team sizes, and projects</small>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('departments.managers_overview') }}" class="btn btn-sm btn-outline-primary">
+                Full Managers Directory <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-enterprise align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Department</th>
+                    <th>Department Manager</th>
+                    <th>Contact</th>
+                    <th>Team Size</th>
+                    <th>Active Projects</th>
+                    <th>Annual Budget</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in managers_summary %}
+                <tr>
+                    <td>
+                        <span class="badge bg-primary-subtle text-primary fw-bold me-1">{{ m.dept.code }}</span>
+                        <span class="fw-semibold">{{ m.dept.name }}</span>
+                    </td>
+                    <td>
+                        {% if m.manager and m.manager.user %}
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; font-size: 0.85rem;">
+                                {{ m.manager.user.first_name[0] }}{{ m.manager.user.last_name[0] }}
+                            </div>
+                            <div>
+                                <a href="{{ url_for('departments.manager_detail', manager_emp_id=m.manager.id) }}" class="fw-semibold text-decoration-none text-dark">
+                                    {{ m.manager.user.full_name }}
+                                </a>
+                                <small class="text-muted d-block">{{ m.manager.designation.title if m.manager.designation else 'Manager' }}</small>
+                            </div>
+                        </div>
+                        {% else %}
+                        <span class="badge bg-danger-subtle text-danger"><i class="bi bi-exclamation-circle me-1"></i>No Manager Assigned</span>
+                        {% endif %}
+                    </td>
+                    <td class="small text-muted">
+                        {% if m.manager and m.manager.user %}
+                        <div><i class="bi bi-envelope me-1"></i>{{ m.manager.user.email }}</div>
+                        <div><i class="bi bi-telephone me-1"></i>{{ m.manager.user.phone or 'N/A' }}</div>
+                        {% else %}
+                        &mdash;
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('employees.index', department_id=m.dept.id) }}" class="badge bg-secondary-subtle text-dark text-decoration-none px-2 py-1">
+                            <i class="bi bi-person-fill me-1"></i>{{ m.members_count }} Staff
+                        </a>
+                    </td>
+                    <td>
+                        <span class="badge bg-info-subtle text-info px-2 py-1">
+                            <i class="bi bi-folder-fill me-1"></i>{{ m.projects_count }} Projects
+                        </span>
+                    </td>
+                    <td class="fw-semibold text-success">
+                        ${{ "{:,.0f}".format(m.dept.budget) }}
+                    </td>
+                    <td class="text-end">
+                        <div class="d-flex justify-content-end gap-1">
+                            {% if m.manager %}
+                            <a href="{{ url_for('departments.manager_detail', manager_emp_id=m.manager.id) }}" class="btn btn-sm btn-outline-secondary py-1 px-2" title="View Team Dossier">
+                                <i class="bi bi-eye"></i> Team
+                            </a>
+                            {% endif %}
+                            <a href="{{ url_for('departments.edit', dept_id=m.dept.id) }}" class="btn btn-sm btn-outline-primary py-1 px-2" title="Assign / Change Manager">
+                                <i class="bi bi-person-gear"></i> Assign
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 

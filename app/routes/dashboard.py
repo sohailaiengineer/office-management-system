@@ -29,6 +29,9 @@ def index():
         active_employees = Employee.active_query().filter_by(status='Active').count()
         total_departments = Department.active_query().count()
 
+        # Total managers assigned across departments
+        total_managers = Department.active_query().filter(Department.manager_id.isnot(None)).count()
+
         # Today's attendance
         att_present = Attendance.active_query().filter(
             Attendance.date == today, Attendance.attendance_status == 'Present'
@@ -39,18 +42,35 @@ def index():
         today_attendance_count = att_present + att_late
         att_absent = max(0, active_employees - today_attendance_count)
 
-        # Pending Leave Requests
+        # Leave metrics (Pending, Approved, Rejected)
         pending_leaves = LeaveRequest.active_query().filter_by(approval_status='Pending').count()
+        approved_leaves = LeaveRequest.active_query().filter_by(approval_status='Approved').count()
+        rejected_leaves = LeaveRequest.active_query().filter_by(approval_status='Rejected').count()
 
-        # Monthly Payroll Summary
+        # Monthly Payroll Summary & Total Payroll Runs
         latest_payroll = Payroll.active_query().order_by(Payroll.year.desc(), Payroll.month.desc()).first()
         monthly_payroll_amount = latest_payroll.net_amount if latest_payroll else Decimal('0.00')
+        payroll_records_count = Payroll.active_query().count()
 
-        # Projects & Tasks
+        # Projects & Tasks metrics
         active_projects = Project.active_query().filter(Project.project_status.in_(['Planning', 'In-Progress'])).count()
-        pending_tasks = Task.active_query().filter(Task.task_status.in_(['To-Do', 'In-Progress', 'Review'])).count()
+        total_tasks = Task.active_query().count()
+        pending_tasks = Task.active_query().filter(Task.task_status.in_(['To-Do', 'Pending', 'In-Progress', 'Review'])).count()
         completed_tasks = Task.active_query().filter_by(task_status='Completed').count()
         total_clients = Client.active_query().count()
+
+        # Managers & Teams Overview for Admin Dashboard
+        all_departments = Department.active_query().all()
+        managers_summary = []
+        for d in all_departments:
+            mem_count = Employee.active_query().filter_by(department_id=d.id).count()
+            proj_count = Project.query.filter_by(department_id=d.id, is_deleted=False).count()
+            managers_summary.append({
+                'dept': d,
+                'manager': d.manager,
+                'members_count': mem_count,
+                'projects_count': proj_count
+            })
 
         # Department Distribution (Chart.js)
         dept_distribution = db.session.query(
@@ -73,16 +93,22 @@ def index():
             total_employees=total_employees,
             active_employees=active_employees,
             total_departments=total_departments,
+            total_managers=total_managers,
             today_attendance_count=today_attendance_count,
             att_present=att_present,
             att_late=att_late,
             att_absent=att_absent,
             pending_leaves=pending_leaves,
+            approved_leaves=approved_leaves,
+            rejected_leaves=rejected_leaves,
             monthly_payroll_amount=monthly_payroll_amount,
+            payroll_records_count=payroll_records_count,
             active_projects=active_projects,
+            total_tasks=total_tasks,
             pending_tasks=pending_tasks,
             completed_tasks=completed_tasks,
             total_clients=total_clients,
+            managers_summary=managers_summary,
             dept_labels=dept_labels,
             dept_counts=dept_counts,
             recent_activities=recent_activities,
@@ -233,11 +259,23 @@ def index():
 
         # Department Leave Requests
         dept_pending_leaves = []
+        dept_approved_leaves_count = 0
+        dept_rejected_leaves_count = 0
         if dept_emp_ids:
             dept_pending_leaves = LeaveRequest.active_query().filter(
                 LeaveRequest.employee_id.in_(dept_emp_ids),
                 LeaveRequest.approval_status == 'Pending'
             ).order_by(LeaveRequest.created_at.desc()).all()
+            dept_approved_leaves_count = LeaveRequest.active_query().filter(
+                LeaveRequest.employee_id.in_(dept_emp_ids),
+                LeaveRequest.approval_status == 'Approved'
+            ).count()
+            dept_rejected_leaves_count = LeaveRequest.active_query().filter(
+                LeaveRequest.employee_id.in_(dept_emp_ids),
+                LeaveRequest.approval_status == 'Rejected'
+            ).count()
+
+        dept_pending_leaves_count = len(dept_pending_leaves)
 
         # Department Announcements
         dept_announcements = Announcement.active_query().filter(
@@ -264,6 +302,9 @@ def index():
             dept_review_tasks=dept_review_tasks,
             dept_completed_tasks=dept_completed_tasks,
             dept_pending_leaves=dept_pending_leaves,
+            dept_pending_leaves_count=dept_pending_leaves_count,
+            dept_approved_leaves_count=dept_approved_leaves_count,
+            dept_rejected_leaves_count=dept_rejected_leaves_count,
             dept_announcements=dept_announcements,
             recent_notifications=recent_notifications
         )

@@ -1,23 +1,69 @@
 import os
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, abort, send_from_directory
 from werkzeug.utils import secure_filename
 from app.extensions import db
 from app.models.document import Document, DocumentCategory, DocumentVersion, DocumentShare
 from app.models.employee import Department
 from app.forms.document_forms import DocumentUploadForm
 from app.services.audit_service import log_audit
-from app.utils.decorators import login_required, get_current_user
+from app.utils.decorators import login_required, get_current_user, get_user_role, get_managed_department
 
 documents_bp = Blueprint('documents', __name__, url_prefix='/documents')
 
 @documents_bp.route('/')
 @login_required
 def index():
+    user = get_current_user()
+    role = get_user_role(user)
     cat_id = request.args.get('category_id', type=str)
+    dept_id = request.args.get('department_id', type=str)
+    file_type = request.args.get('file_type', type=str)
+    search_q = request.args.get('search', '').strip()
+
     query = Document.active_query()
+
+    # Role scoping for confidential documents
+    if role == 'employee':
+        emp_dept_id = user.employee.department_id if user.employee else None
+        query = query.filter(
+            db.or_(
+                Document.is_confidential == False,
+                Document.uploaded_by_id == user.id
+            )
+        ).filter(
+            db.or_(
+                Document.department_id.is_(None),
+                Document.department_id == emp_dept_id,
+                Document.uploaded_by_id == user.id
+            )
+        )
+    elif role == 'dept_manager':
+        managed_dept = get_managed_department(user)
+        m_dept_id = managed_dept.id if managed_dept else None
+        query = query.filter(
+            db.or_(
+                Document.is_confidential == False,
+                Document.uploaded_by_id == user.id,
+                Document.department_id == m_dept_id
+            )
+        )
 
     if cat_id and cat_id.isdigit():
         query = query.filter_by(category_id=int(cat_id))
+
+    if dept_id and dept_id.isdigit():
+        query = query.filter_by(department_id=int(dept_id))
+
+    if file_type:
+        query = query.filter(Document.file_type.ilike(file_type.strip()))
+
+    if search_q:
+        query = query.filter(
+            db.or_(
+                Document.title.ilike(f"%{search_q}%"),
+                Document.description.ilike(f"%{search_q}%")
+            )
+        )
 
     documents_list = query.order_by(Document.id.desc()).all()
     categories = DocumentCategory.active_query().all()
@@ -28,8 +74,70 @@ def index():
         documents=documents_list,
         categories=categories,
         departments=departments,
-        selected_category=cat_id
+        selected_category=cat_id,
+        selected_dept=dept_id,
+        selected_file_type=file_type,
+        search=search_q
     )
+
+
+@documents_bp.route('/<int:doc_id>/download')
+@login_required
+def download(doc_id):
+    doc = Document.get_active_or_404(doc_id)
+    user = get_current_user()
+    role = get_user_role(user)
+
+    # Authorization Check
+    if doc.is_confidential:
+        if role not in ['super_admin', 'hr_manager'] and doc.uploaded_by_id != user.id:
+            managed_dept = get_managed_department(user)
+            if not (role == 'dept_manager' and managed_dept and doc.department_id == managed_dept.id):
+                flash('Access Denied: This is a restricted confidential document.', 'danger')
+                return redirect(url_for('documents.index'))
+
+    if role == 'employee' and doc.department_id:
+        emp_dept_id = user.employee.department_id if user.employee else None
+        if doc.department_id != emp_dept_id and doc.uploaded_by_id != user.id:
+            flash('Access Denied: You do not have permission to download this department document.', 'danger')
+            return redirect(url_for('documents.index'))
+
+    filename = os.path.basename(doc.file_path)
+    upload_dir = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+    full_path = os.path.join(upload_dir, filename)
+
+    if not os.path.exists(full_path):
+        os.makedirs(upload_dir, exist_ok=True)
+        with open(full_path, 'wb') as f:
+            f.write(
+                f"Office Management System - Enterprise Document Repository\r\n"
+                f"Title: {doc.title}\r\n"
+                f"Category: {doc.category.name if doc.category else 'General'}\r\n"
+                f"Uploaded by: {doc.uploaded_by.full_name if doc.uploaded_by else 'Administrator'}\r\n"
+                f"Archived Date: {doc.created_at}\r\n"
+                f"Confidential: {'YES' if doc.is_confidential else 'NO'}\r\n".encode('utf-8')
+            )
+
+    safe_title = secure_filename(doc.title) or 'document'
+    download_name = f"{safe_title}.{doc.file_type or 'pdf'}"
+    return send_from_directory(upload_dir, filename, as_attachment=True, download_name=download_name)
+
+
+@documents_bp.route('/<int:doc_id>/view')
+@login_required
+def view(doc_id):
+    doc = Document.get_active_or_404(doc_id)
+    user = get_current_user()
+    role = get_user_role(user)
+
+    if doc.is_confidential:
+        if role not in ['super_admin', 'hr_manager'] and doc.uploaded_by_id != user.id:
+            managed_dept = get_managed_department(user)
+            if not (role == 'dept_manager' and managed_dept and doc.department_id == managed_dept.id):
+                flash('Access Denied: This is a restricted confidential document.', 'danger')
+                return redirect(url_for('documents.index'))
+
+    return render_template('documents/view.html', document=doc)
 
 
 @documents_bp.route('/upload', methods=['GET', 'POST'])

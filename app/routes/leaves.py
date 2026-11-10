@@ -1,16 +1,23 @@
+import os
+import logging
 from datetime import datetime, date
 from decimal import Decimal
-from flask import Blueprint, render_template, redirect, url_for, flash, request, session
+from werkzeug.utils import secure_filename
+from flask import Blueprint, render_template, redirect, url_for, flash, request, session, current_app
 from app.extensions import db
-from app.models.leave import LeaveRequest, LeaveType, LeaveBalance, LeaveApproval
+from app.models.leave import LeaveRequest, LeaveType, LeaveBalance, LeaveApproval, LeaveAttachment
 from app.models.employee import Employee
 from app.forms.leave_forms import LeaveRequestForm, LeaveTypeForm, LeaveApprovalForm
 from app.services.audit_service import log_audit
+from app.services.notification_service import notify_leave_submitted, notify_leave_decision
+from app.services.email_service import send_leave_status_email
 from app.utils.decorators import (
     login_required, hr_or_admin_required, get_current_user,
     get_user_role, get_managed_department
 )
 from app.utils import utc_now
+
+logger = logging.getLogger(__name__)
 
 leaves_bp = Blueprint('leaves', __name__, url_prefix='/leaves')
 
@@ -20,7 +27,8 @@ def index():
     user = get_current_user()
     role = get_user_role(user)
     page = request.args.get('page', 1, type=int)
-    status_filter = request.args.get('status', '')
+    status_filter = request.args.get('status', '').strip()
+    search_q = request.args.get('search', '').strip()
 
     query = LeaveRequest.active_query()
 
@@ -39,7 +47,18 @@ def index():
             query = query.filter(db.literal(False))
 
     if status_filter:
-        query = query.filter_by(approval_status=status_filter)
+        query = query.filter(LeaveRequest.approval_status.ilike(status_filter))
+
+    if search_q:
+        query = query.join(LeaveRequest.employee).filter(
+            db.or_(
+                LeaveRequest.reason.ilike(f"%{search_q}%"),
+                Employee.emp_code.ilike(f"%{search_q}%"),
+                Employee.user.has(db.or_(
+                    db.func.concat(Employee.user.property.mapper.class_.first_name, ' ', Employee.user.property.mapper.class_.last_name).ilike(f"%{search_q}%")
+                ))
+            )
+        )
 
     pagination = query.order_by(LeaveRequest.id.desc()).paginate(page=page, per_page=10, error_out=False)
 
@@ -54,6 +73,7 @@ def index():
         leaves=pagination.items,
         balances=balances,
         selected_status=status_filter,
+        search_query=search_q,
         is_employee=(role == 'employee'),
         user_role=role
     )
@@ -64,11 +84,16 @@ def index():
 def apply():
     user = get_current_user()
     if not user.employee:
-        flash('You must have an employee profile to apply for leave.', 'danger')
+        flash('You must have an employee profile linked to your user account to apply for leave.', 'danger')
         return redirect(url_for('leaves.index'))
 
     form = LeaveRequestForm()
-    form.leave_type_id.choices = [(lt.id, f"{lt.name} (Max: {lt.max_days_per_year} days)") for lt in LeaveType.active_query().all()]
+    leave_types = LeaveType.active_query().all()
+    form.leave_type_id.choices = [(lt.id, f"{lt.name} (Max: {lt.max_days_per_year} days)") for lt in leave_types]
+
+    if not leave_types:
+        flash('No active leave categories exist in the system. Please contact HR.', 'warning')
+        return redirect(url_for('leaves.index'))
 
     if form.validate_on_submit():
         if form.end_date.data < form.start_date.data:
@@ -77,23 +102,57 @@ def apply():
 
         total_days = Decimal((form.end_date.data - form.start_date.data).days + 1)
 
-        req = LeaveRequest(
-            employee_id=user.employee.id,
-            leave_type_id=form.leave_type_id.data,
-            start_date=form.start_date.data,
-            end_date=form.end_date.data,
-            total_days=total_days,
-            reason=form.reason.data.strip(),
-            approval_status='Pending',
-            created_by=user.id,
-            updated_by=user.id
-        )
-        db.session.add(req)
-        db.session.commit()
+        try:
+            req = LeaveRequest(
+                employee_id=user.employee.id,
+                leave_type_id=form.leave_type_id.data,
+                start_date=form.start_date.data,
+                end_date=form.end_date.data,
+                total_days=total_days,
+                reason=form.reason.data.strip(),
+                approval_status='Pending',
+                created_by=user.id,
+                updated_by=user.id
+            )
+            db.session.add(req)
+            db.session.flush()
 
-        log_audit('CREATE', 'leave_requests', req.id, None, {'days': float(total_days), 'reason': req.reason})
-        flash('Leave application submitted successfully for managerial approval.', 'success')
-        return redirect(url_for('leaves.index'))
+            # Handle optional supporting document attachment
+            doc_file = form.supporting_document.data
+            if doc_file and hasattr(doc_file, 'filename') and doc_file.filename != '':
+                raw_filename = secure_filename(doc_file.filename)
+                unique_filename = f"leave_{user.employee.emp_code}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{raw_filename}"
+                upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'leaves')
+                os.makedirs(upload_dir, exist_ok=True)
+                save_path = os.path.join(upload_dir, unique_filename)
+                doc_file.save(save_path)
+
+                attachment = LeaveAttachment(
+                    leave_request_id=req.id,
+                    file_path=f"uploads/leaves/{unique_filename}",
+                    file_name=raw_filename,
+                    file_size=os.path.getsize(save_path),
+                    created_by=user.id,
+                    updated_by=user.id
+                )
+                db.session.add(attachment)
+
+            db.session.commit()
+            log_audit('CREATE', 'leave_requests', req.id, None, {'days': float(total_days), 'reason': req.reason})
+
+            # Broadcast notifications to HR, Super Admin, and Department Manager
+            try:
+                notify_leave_submitted(req)
+            except Exception as notif_err:
+                logger.warning(f"Notification error on leave submit: {notif_err}")
+
+            flash('Leave application submitted successfully for managerial approval.', 'success')
+            return redirect(url_for('leaves.index'))
+
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error submitting leave request: {str(e)}", exc_info=True)
+            flash(f'An error occurred while processing your leave request: {str(e)}', 'danger')
 
     return render_template('leaves/apply.html', form=form)
 
@@ -154,9 +213,23 @@ def take_action(req_id):
             balance.used_days += leave_req.total_days
             balance.remaining_days = max(Decimal('0.0'), balance.total_allocated - balance.used_days)
 
-    db.session.commit()
-    log_audit('UPDATE', 'leave_requests', leave_req.id, {'status': old_status}, {'status': action, 'comments': comments})
-    flash(f'Leave request #{leave_req.id} {action.lower()} successfully.', 'success')
+    try:
+        db.session.commit()
+        log_audit('UPDATE', 'leave_requests', leave_req.id, {'status': old_status}, {'status': action, 'comments': comments})
+
+        # Send decision notification & email to employee
+        try:
+            notify_leave_decision(leave_req, action, user.full_name)
+            send_leave_status_email(leave_req, action, user.full_name)
+        except Exception as notif_err:
+            logger.warning(f"Leave decision notification error: {notif_err}")
+
+        flash(f'Leave request #{leave_req.id} {action.lower()} successfully.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error updating leave request #{req_id}: {str(e)}", exc_info=True)
+        flash(f'Error updating leave status: {str(e)}', 'danger')
+
     return redirect(url_for('leaves.index'))
 
 
