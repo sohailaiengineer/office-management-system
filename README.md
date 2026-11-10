@@ -79,6 +79,7 @@ The system enforces strict multi-tier permissions through session-authenticated 
 The application features a modern enterprise **Workplace Access Portal** supporting centralized authentication alongside dedicated department workspaces with strict data isolation:
 
 - **Central Workplace Portal**: `/auth/login` (Unrestricted access for Super Admin and general organizational navigation)
+- **Employee Self-Service Portal**: `/auth/login/employee` (Universal staff login for employees across all departments)
 - **Engineering Division Portal**: `/auth/login/ENG`
 - **Human Resources Division Portal**: `/auth/login/HR`
 - **Finance & Accounts Division Portal**: `/auth/login/FIN`

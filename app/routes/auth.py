@@ -20,10 +20,11 @@ def login(dept_code=None):
     # Retrieve all primary departments for the portal switcher
     departments = Department.active_query().order_by(Department.id).all()
 
-    # Determine targeted department portal if specified in URL or query arg
-    target_code = (dept_code or request.args.get('dept', '')).strip().upper()
+    # Determine targeted department or employee portal if specified in URL or query arg
+    target_code = (dept_code or request.args.get('dept', '') or request.args.get('portal', '')).strip().upper()
+    is_employee_portal = (target_code in ['EMP', 'EMPLOYEE'])
     current_dept = None
-    if target_code:
+    if target_code and not is_employee_portal:
         current_dept = Department.active_query().filter(Department.code == target_code).first()
 
     form = LoginForm()
@@ -39,7 +40,7 @@ def login(dept_code=None):
         if user and user.check_password(form.password.data):
             if user.status != 'Active':
                 flash('Your account has been deactivated. Please contact an administrator.', 'danger')
-                return render_template('auth/login.html', form=form, current_dept=current_dept, departments=departments)
+                return render_template('auth/login.html', form=form, current_dept=current_dept, is_employee_portal=is_employee_portal, departments=departments)
 
             # Department portal access validation:
             # If logging in via a specific department portal, verify department affiliation (unless Super Admin)
@@ -48,8 +49,8 @@ def login(dept_code=None):
                 user_dept_id = user.employee.department_id if user.employee else None
                 if user_dept_id != current_dept.id:
                     user_dept_name = user.employee.department.name if user.employee and user.employee.department else 'another division'
-                    flash(f"Department Access Restricted: Your credentials are registered under '{user_dept_name}'. Please sign in through the {user_dept_name} Portal or Central Workplace Login.", 'warning')
-                    return render_template('auth/login.html', form=form, current_dept=current_dept, departments=departments)
+                    flash(f"Department Access Restricted: Your credentials are registered under '{user_dept_name}'. Please sign in through the {user_dept_name} Portal, Employee Login, or Central Workplace Login.", 'warning')
+                    return render_template('auth/login.html', form=form, current_dept=current_dept, is_employee_portal=is_employee_portal, departments=departments)
 
             session.clear()
             session['user_id'] = user.id
@@ -76,8 +77,15 @@ def login(dept_code=None):
             db.session.add(history)
             db.session.commit()
 
-            portal_note = f" via {current_dept.name} Portal" if current_dept else ""
-            log_audit('LOGIN', 'users', user.id, None, {'username': user.username, 'portal': current_dept.code if current_dept else 'CENTRAL'}, user.id)
+            if is_employee_portal:
+                portal_note = " via Employee Portal"
+            elif current_dept:
+                portal_note = f" via {current_dept.name} Portal"
+            else:
+                portal_note = ""
+
+            portal_code = 'EMPLOYEE' if is_employee_portal else (current_dept.code if current_dept else 'CENTRAL')
+            log_audit('LOGIN', 'users', user.id, None, {'username': user.username, 'portal': portal_code}, user.id)
 
             flash(f'Welcome back, {user.first_name}! Signed in{portal_note}.', 'success')
             next_page = request.args.get('next')
@@ -96,7 +104,7 @@ def login(dept_code=None):
 
             flash('Invalid username/email or password.', 'danger')
 
-    return render_template('auth/login.html', form=form, current_dept=current_dept, departments=departments)
+    return render_template('auth/login.html', form=form, current_dept=current_dept, is_employee_portal=is_employee_portal, departments=departments)
 
 
 @auth_bp.route('/logout')

@@ -1329,7 +1329,31 @@ class EnterpriseOMSTestSuite(unittest.TestCase):
         self.assertEqual(admin_portal_res.status_code, 200)
         self.assertIn(b'Executive Operations Dashboard', admin_portal_res.data)
 
-        print("[OK] Test 30: Separate Department Logins, Portal Restriction & Super Admin Access verified.")
+        # 5. Employee Login Portal (/auth/login/employee)
+        self.logout()
+        emp_portal_page = self.client.get('/auth/login/employee')
+        self.assertEqual(emp_portal_page.status_code, 200)
+        self.assertIn(b'Employee Login', emp_portal_page.data)
+        self.assertIn(b'Employee Self-Service', emp_portal_page.data)
+
+        # Employees from any department can sign in via Employee Portal
+        self.logout()
+        emp_portal_login = self.client.post('/auth/login/employee', data={
+            'username_or_email': 'johndoe',
+            'password': 'Emp@123'
+        }, follow_redirects=True)
+        self.assertEqual(emp_portal_login.status_code, 200)
+        self.assertIn(b'Employee Self-Service Portal', emp_portal_login.data)
+
+        self.logout()
+        jane_emp_login = self.client.post('/auth/login/employee', data={
+            'username_or_email': 'janedoe',
+            'password': 'Emp@123'
+        }, follow_redirects=True)
+        self.assertEqual(jane_emp_login.status_code, 200)
+        self.assertIn(b'Employee Self-Service Portal', jane_emp_login.data)
+
+        print("[OK] Test 30: Separate Department Logins, Employee Portal & Super Admin Access verified.")
 
     # ---------------------------------------------------------
     # Test 31: Cross-Department Data Isolation & Strict RBAC
