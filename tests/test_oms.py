@@ -1274,86 +1274,49 @@ class EnterpriseOMSTestSuite(unittest.TestCase):
         print("[OK] Test 29: HR Salary Management, Automatic Net Pay & Duplicate Prevention verified.")
 
     # ---------------------------------------------------------
-    # Test 30: Separate Department Logins & Portal Validation
+    # Test 30: Universal Company Login Portal & Automatic Role/Dept Detection
     # ---------------------------------------------------------
-    def test_30_separate_department_logins_and_portals(self):
-        # 1. Department Login Portal Pages render correctly
-        portals = [
-            ('/auth/login/ENG', b'ENG Division', b'Engineering'),
-            ('/auth/login/HR', b'HR Division', b'Human Resources'),
-            ('/auth/login/FIN', b'FIN Division', b'Finance & Accounts'),
-            ('/auth/login/MKT', b'MKT Division', b'Marketing & Sales')
+    def test_30_universal_company_login_and_auto_role_detection(self):
+        # 1. Universal Login Page renders correctly with company branding
+        self.logout()
+        resp = self.client.get('/auth/login')
+        self.assertEqual(resp.status_code, 200)
+        html = resp.data.decode('utf-8')
+
+        # Verify required elements
+        self.assertIn('Welcome to Our Workplace', html)
+        self.assertIn('Sign In to OMS', html)
+        self.assertIn('Username or Email Address', html)
+        self.assertIn('Account Password', html)
+        self.assertIn('Remember my device', html)
+        self.assertIn('Forgot Password?', html)
+
+        # Verify restricted department/role selection elements are completely removed
+        for forbidden in ['Select Workplace Access Portal', 'Central Login', 'Engineering Division', 'HR Division', 'FIN Division', 'MKT Division', 'dept-pill']:
+            self.assertNotIn(forbidden, html)
+
+        # 2. Automatic Role and Department Detection on Universal Login
+        role_test_matrix = [
+            ('admin', 'Admin@123', 'Executive Operations Dashboard', 'Super Admin'),
+            ('hrmanager', 'Hr@123', 'HR Operations', 'HR Manager'),
+            ('deptmanager', 'Manager@123', 'Engineering', 'Engineering Dept Manager'),
+            ('finmanager', 'Manager@123', 'Finance', 'Finance Dept Manager'),
+            ('mktmanager', 'Manager@123', 'Marketing', 'Marketing Dept Manager'),
+            ('johndoe', 'Emp@123', 'Employee Self-Service Portal', 'Engineering Employee'),
+            ('janedoe', 'Emp@123', 'Employee Self-Service Portal', 'Marketing Employee'),
+            ('robertchen', 'Emp@123', 'Employee Self-Service Portal', 'Finance Employee'),
         ]
-        for url, badge, name in portals:
-            resp = self.client.get(url)
-            self.assertEqual(resp.status_code, 200)
-            self.assertIn(badge, resp.data)
-            self.assertIn(name, resp.data)
 
-        # 2. Verify dedicated department manager logins:
-        # Engineering Manager: deptmanager
-        eng_login = self.login_as('deptmanager', 'Manager@123')
-        self.assertEqual(eng_login.status_code, 200)
-        self.assertIn(b'Engineering', eng_login.data)
+        for username, pwd, expected_text, role_title in role_test_matrix:
+            self.logout()
+            login_resp = self.client.post('/auth/login', data={
+                'username_or_email': username,
+                'password': pwd
+            }, follow_redirects=True)
+            self.assertEqual(login_resp.status_code, 200)
+            self.assertIn(expected_text.encode('utf-8'), login_resp.data, f"Role auto-detection failed for {username} ({role_title})")
 
-        # HR Manager: hrmanager
-        hr_login = self.login_as('hrmanager', 'Hr@123')
-        self.assertEqual(hr_login.status_code, 200)
-        self.assertIn(b'HR Operations', hr_login.data)
-
-        # Finance Manager: finmanager
-        fin_login = self.login_as('finmanager', 'Manager@123')
-        self.assertEqual(fin_login.status_code, 200)
-        self.assertIn(b'Finance', fin_login.data)
-
-        # Marketing Manager: mktmanager
-        mkt_login = self.login_as('mktmanager', 'Manager@123')
-        self.assertEqual(mkt_login.status_code, 200)
-        self.assertIn(b'Marketing', mkt_login.data)
-
-        # 3. Test cross-department login restriction:
-        # If an Engineering user tries to sign into Finance Portal /auth/login/FIN
-        self.logout()
-        cross_res = self.client.post('/auth/login/FIN', data={
-            'username_or_email': 'deptmanager',
-            'password': 'Manager@123'
-        }, follow_redirects=True)
-        self.assertEqual(cross_res.status_code, 200)
-        self.assertIn(b'Department Access Restricted', cross_res.data)
-
-        # 4. Super Admin can access ANY department portal
-        admin_portal_res = self.client.post('/auth/login/FIN', data={
-            'username_or_email': 'admin',
-            'password': 'Admin@123'
-        }, follow_redirects=True)
-        self.assertEqual(admin_portal_res.status_code, 200)
-        self.assertIn(b'Executive Operations Dashboard', admin_portal_res.data)
-
-        # 5. Employee Login Portal (/auth/login/employee)
-        self.logout()
-        emp_portal_page = self.client.get('/auth/login/employee')
-        self.assertEqual(emp_portal_page.status_code, 200)
-        self.assertIn(b'Employee Login', emp_portal_page.data)
-        self.assertIn(b'Employee Self-Service', emp_portal_page.data)
-
-        # Employees from any department can sign in via Employee Portal
-        self.logout()
-        emp_portal_login = self.client.post('/auth/login/employee', data={
-            'username_or_email': 'johndoe',
-            'password': 'Emp@123'
-        }, follow_redirects=True)
-        self.assertEqual(emp_portal_login.status_code, 200)
-        self.assertIn(b'Employee Self-Service Portal', emp_portal_login.data)
-
-        self.logout()
-        jane_emp_login = self.client.post('/auth/login/employee', data={
-            'username_or_email': 'janedoe',
-            'password': 'Emp@123'
-        }, follow_redirects=True)
-        self.assertEqual(jane_emp_login.status_code, 200)
-        self.assertIn(b'Employee Self-Service Portal', jane_emp_login.data)
-
-        print("[OK] Test 30: Separate Department Logins, Employee Portal & Super Admin Access verified.")
+        print("[OK] Test 30: Universal Company Login & Automatic Role/Dept Detection verified.")
 
     # ---------------------------------------------------------
     # Test 31: Cross-Department Data Isolation & Strict RBAC

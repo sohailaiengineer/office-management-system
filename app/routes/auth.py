@@ -17,16 +17,6 @@ def login(dept_code=None):
     if session.get('user_id'):
         return redirect(url_for('dashboard.index'))
 
-    # Retrieve all primary departments for the portal switcher
-    departments = Department.active_query().order_by(Department.id).all()
-
-    # Determine targeted department or employee portal if specified in URL or query arg
-    target_code = (dept_code or request.args.get('dept', '') or request.args.get('portal', '')).strip().upper()
-    is_employee_portal = (target_code in ['EMP', 'EMPLOYEE'])
-    current_dept = None
-    if target_code and not is_employee_portal:
-        current_dept = Department.active_query().filter(Department.code == target_code).first()
-
     form = LoginForm()
     if form.validate_on_submit():
         user_identifier = form.username_or_email.data.strip()
@@ -40,17 +30,10 @@ def login(dept_code=None):
         if user and user.check_password(form.password.data):
             if user.status != 'Active':
                 flash('Your account has been deactivated. Please contact an administrator.', 'danger')
-                return render_template('auth/login.html', form=form, current_dept=current_dept, is_employee_portal=is_employee_portal, departments=departments)
+                return render_template('auth/login.html', form=form)
 
-            # Department portal access validation:
-            # If logging in via a specific department portal, verify department affiliation (unless Super Admin)
+            # Universal authentication: Role and department are automatically detected from database records
             is_super_admin = user.is_admin or any(ur.role.name == 'super_admin' for ur in user.user_roles if ur.role and not ur.is_deleted)
-            if current_dept and not is_super_admin:
-                user_dept_id = user.employee.department_id if user.employee else None
-                if user_dept_id != current_dept.id:
-                    user_dept_name = user.employee.department.name if user.employee and user.employee.department else 'another division'
-                    flash(f"Department Access Restricted: Your credentials are registered under '{user_dept_name}'. Please sign in through the {user_dept_name} Portal, Employee Login, or Central Workplace Login.", 'warning')
-                    return render_template('auth/login.html', form=form, current_dept=current_dept, is_employee_portal=is_employee_portal, departments=departments)
 
             session.clear()
             session['user_id'] = user.id
@@ -77,17 +60,9 @@ def login(dept_code=None):
             db.session.add(history)
             db.session.commit()
 
-            if is_employee_portal:
-                portal_note = " via Employee Portal"
-            elif current_dept:
-                portal_note = f" via {current_dept.name} Portal"
-            else:
-                portal_note = ""
+            log_audit('LOGIN', 'users', user.id, None, {'username': user.username, 'portal': 'UNIVERSAL'}, user.id)
 
-            portal_code = 'EMPLOYEE' if is_employee_portal else (current_dept.code if current_dept else 'CENTRAL')
-            log_audit('LOGIN', 'users', user.id, None, {'username': user.username, 'portal': portal_code}, user.id)
-
-            flash(f'Welcome back, {user.first_name}! Signed in{portal_note}.', 'success')
+            flash(f'Welcome back, {user.first_name}!', 'success')
             next_page = request.args.get('next')
             return redirect(next_page or url_for('dashboard.index'))
         else:
@@ -104,7 +79,7 @@ def login(dept_code=None):
 
             flash('Invalid username/email or password.', 'danger')
 
-    return render_template('auth/login.html', form=form, current_dept=current_dept, is_employee_portal=is_employee_portal, departments=departments)
+    return render_template('auth/login.html', form=form)
 
 
 @auth_bp.route('/logout')
