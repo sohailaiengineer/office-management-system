@@ -2,12 +2,21 @@ import os
 import socket
 from app import create_app
 
-app = create_app(os.environ.get('FLASK_ENV', 'development'))
+# Automatically select production configuration on Vercel or when FLASK_ENV=production
+flask_env = os.environ.get('FLASK_ENV')
+if not flask_env:
+    flask_env = 'production' if os.environ.get('VERCEL') else 'development'
+
+# WSGI Application Entry Point
+app = create_app(flask_env)
 
 def find_available_port(preferred_port=5000):
     env_port = os.environ.get('PORT')
     if env_port:
-        return int(env_port)
+        try:
+            return int(env_port)
+        except ValueError:
+            pass
     
     # Check preferred port first
     for port in [preferred_port, 5001, 5050, 8000, 8080]:
@@ -21,8 +30,8 @@ def find_available_port(preferred_port=5000):
 
 if __name__ == '__main__':
     port = find_available_port(5000)
-    print(f"============================================================")
-    print(f"  OFFICE MANAGEMENT SYSTEM (OMS) IS RUNNING LOCALLY")
+    print("============================================================")
+    print("  OFFICE MANAGEMENT SYSTEM (OMS) IS RUNNING LOCALLY")
     print(f"  Access URL: http://127.0.0.1:{port}")
-    print(f"============================================================")
+    print("============================================================")
     app.run(host='127.0.0.1', port=port, debug=False)

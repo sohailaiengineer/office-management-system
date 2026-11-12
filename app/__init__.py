@@ -18,7 +18,10 @@ def create_app(config_name=None):
     csrf.init_app(app)
 
     # Ensure uploads directory exists
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    try:
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    except OSError:
+        pass
 
     # Register all modular blueprints
     for bp in all_blueprints:

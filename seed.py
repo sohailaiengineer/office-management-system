@@ -34,10 +34,11 @@ from app.models import (
     AuditLog, SystemSetting, ApprovalWorkflow, ApprovalHistory
 )
 
-app = create_app('development')
-
-def seed_database():
-    with app.app_context():
+def seed_database(env_name=None):
+    if env_name is None:
+        env_name = os.environ.get('FLASK_ENV', 'development')
+    seeder_app = create_app(env_name)
+    with seeder_app.app_context():
         print("Creating all tables in MySQL...")
         db.create_all()
         print("All database tables created successfully!")
