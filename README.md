@@ -218,14 +218,14 @@ erDiagram
     permissions ||--o{ role_permissions : "included_in"
     users ||--o{ user_sessions : "holds"
     users ||--o{ login_history : "logs"
-    users ||--o1 employees : "authenticates"
+    users ||--o| employees : "authenticates"
     
     departments ||--o{ designations : "has"
     departments ||--o{ employees : "employs"
     departments ||--o{ department_locations : "located_at"
     designations ||--o{ employees : "designates"
     
-    employees ||--o1 employee_profiles : "detailed_by"
+    employees ||--o| employee_profiles : "detailed_by"
     employees ||--o{ employee_contacts : "has_contact"
     employees ||--o{ employee_addresses : "resides_at"
     employees ||--o{ employee_education : "achieved"
