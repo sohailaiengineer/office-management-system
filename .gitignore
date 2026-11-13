@@ -68,3 +68,5 @@ __pycache__/
 *.pyc
 .pytest_cache/
 instance/
+.vercel
+.env*
